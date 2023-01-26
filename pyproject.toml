@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "prjlecm"
+version = "0.1.1"
+description = ""
+authors = ["Fan Wang <wangfanbsg75@live.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.24.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
