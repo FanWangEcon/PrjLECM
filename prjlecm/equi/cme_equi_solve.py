@@ -7,9 +7,10 @@ import prjlecm.equa.cme_supt_equa_demand as cme_supt_equa_demand
 import prjlecm.equa.cme_supt_equa_supply as cme_supt_equa_supply
 import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
 import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
+import prjlecm.input.cme_inpt_parse as cme_inpt_parse
 import prjlecm.util.cme_supt_math as cme_supt_math
 import prjlecm.util.cme_supt_opti as cme_supt_opti
-
+import prjlecm.demand.cme_dslv_eval as cme_dslv_eval
 
 # Get Sets of Linear lines and solve
 def cme_equi_solve_sone(dc_sprl_intr_slpe, dc_dmrl_intr_slpe, verbose=False):
@@ -203,6 +204,7 @@ def cme_equi_solve_sthr(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
 def cme_equi_solve_sfur(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
                         dc_dmrl_intr_slpe,
                         dc_equi_solve_sone, dc_equi_solve_stwo, dc_equi_solve_sthr,
+                        dc_ces,
                         verbose=False):
     # Supply levels, all workers, j=1
     ar_spsh_j1_of_totw = dc_equi_solve_stwo["ar_spsh_j1_of_totw"]
@@ -284,11 +286,30 @@ def cme_equi_solve_sfur(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     fl_elas = dc_dmrl_intr_slpe["fl_elas"]
 
     # this is general except for this last spot which does not work with nested problem
-    fl_ces_output = cme_supt_equa_demand.cme_prod_ces(
+    # TODO: THIS IS INCORRECT, this can not take the share input below, which is potentially not the true
+    # share inputs needed for building up CES output function.
+    fl_ces_output_wrong = cme_supt_equa_demand.cme_prod_ces(
         fl_elas, ar_dmrl_share_flat, ar_splv_all_flat)
+    # corrected solution
+    __, ls_maxlyr_key, it_lyr0_key = cme_inpt_parse.cme_parse_demand_tbidx(
+        dc_ces)
+    for it_key_idx in ls_maxlyr_key:
+        # Get wkr and occ index for current child
+        it_wkr_idx = dc_ces[it_key_idx]['wkr']
+        it_occ_idx = dc_ces[it_key_idx]['occ']
+
+        # wrk index matches with rows, 1st row is first worker, wkr index 0
+        # occ + 1 because first column is leisure quantityt
+        fl_qtlv = pd_qtlv_all.iloc[it_wkr_idx, it_occ_idx + 1]
+        # Replace highest/bottommost layer's qty terms with equi solution qs.s
+        dc_ces[it_key_idx]['qty'] = fl_qtlv
+    dc_ces = cme_dslv_eval.cme_prod_ces_nest_output(
+        dc_ces, verbose=False, verbose_debug=False)
+    fl_ces_output = dc_ces[it_lyr0_key]['qty']
 
     if verbose:
         print(f'{fl_ces_output=}')
+        # print(f'{fl_ces_output_alt=}')
 
     return {"fl_ces_output": fl_ces_output,
             "pd_qtlv_all": pd_qtlv_all,
@@ -302,6 +323,7 @@ def cme_equi_solve_stwthfu(
         dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         dc_dmrl_intr_slpe,
         dc_equi_solve_sone,
+        dc_ces,
         fl_spsh_j0_i1=0.1, verbose=False):
     # D.2 Solve second step
     dc_equi_solve_stwo = cme_equi_solve_stwo(
@@ -323,6 +345,7 @@ def cme_equi_solve_stwthfu(
         dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         dc_dmrl_intr_slpe,
         dc_equi_solve_sone, dc_equi_solve_stwo, dc_equi_solve_sthr,
+        dc_ces,
         verbose=verbose)
 
     return dc_equi_solv_sfur
@@ -331,6 +354,7 @@ def cme_equi_solve_stwthfu(
 def cme_equi_solve(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
                    dc_dmrl_intr_slpe,
                    dc_equi_solve_sone,
+                   dc_ces,
                    fl_output_target=0.3,
                    verbose_slve=False,
                    verbose=False):
@@ -339,6 +363,7 @@ def cme_equi_solve(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
             dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
             dc_dmrl_intr_slpe,
             dc_equi_solve_sone,
+            dc_ces,
             fl_spsh_j0_i1=fl_spsh_j0_i1,
             verbose=verbose_slve)
 
@@ -411,13 +436,18 @@ if __name__ == "__main__":
         verbose=bl_verbose_simu)
 
     # A.2 Simulate demand parameters
+    bl_simu_q = True
     dc_demand_ces = cme_inpt_simu_demand.cme_simu_demand_params_ces_single(
         it_worker_types=it_worker_types,
         it_occ_types=it_occ_types,
         fl_power_min=fl_power_min,
         fl_power_max=fl_power_max,
+        bl_simu_q=bl_simu_q,
         it_seed=it_seed_demand,
         verbose=bl_verbose_simu)
+    # if bl_simu_q:
+    #     de_demand_ces = cme_dslv_eval.cme_prod_ces_nest_output(
+    #         dc_demand_ces, verbose=True, verbose_debug=True)
 
     # B. Supply and Demand input structures
     dc_sprl_intr_slpe = cme_equi_solve_gen_inputs.cme_equi_supply_dict_converter_nonest(
@@ -452,6 +482,7 @@ if __name__ == "__main__":
         dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         dc_dmrl_intr_slpe,
         dc_equi_solve_sone, dc_equi_solve_stwo, dc_equi_solve_sthr,
+        dc_demand_ces,
         verbose=bl_verbose_slve)
 
     # solve for nu_1
@@ -460,6 +491,7 @@ if __name__ == "__main__":
         dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         dc_dmrl_intr_slpe,
         dc_equi_solve_sone,
+        dc_demand_ces,
         fl_output_target=fl_output_target,
         verbose_slve=False,
         verbose=True)

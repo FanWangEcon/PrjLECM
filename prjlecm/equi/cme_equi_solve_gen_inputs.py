@@ -97,86 +97,14 @@ def cme_equi_demand_dict_converter_nonest(dc_ces, verbose=False):
         dc_ces, st_rela_shr_key='shr', ls_it_ipt=ls_it_ipt, fl_elas=fl_elas, verbose=verbose)
 
     return ls_res
-    # # List of all keys to use
-    # ls_it_ipt = dc_ces[0]['ipt']
-
-    # # create an empty matrixes with rows as indi as columns as occupations, to store the necessary information. Note that we consider RELATIVES!
-    # dc_equi_sup_occ_wkr_lst = cme_inpt_parse.cme_parse_occ_wkr_lst(
-    #     dc_ces, ls_it_ipt, verbose=False)
-    # it_occ_cnt = dc_equi_sup_occ_wkr_lst["it_occ_cnt"]
-    # it_wkr_cnt = dc_equi_sup_occ_wkr_lst["it_wkr_cnt"]
-
-    # # mt_dmrl_wthn_i_acrs_jv1_intr : a I x (J-1) matrix of "relative-share" coefficients, Eq. 2 intercept (2nd line), compare j>1 to j=1
-    # mt_dmrl_wthn_i_acrs_jv1_intr = np.empty(
-    #     [it_wkr_cnt, it_occ_cnt - 1], dtype=float)
-    # # mt_dmrl_wthn_i_acrs_jv1_slpe : a I x (J-1) matrix of "elasticity" coefficients, Eq. 2 slopes (2nd line), compare j>1 to j=1
-    # mt_dmrl_wthn_i_acrs_jv1_slpe = np.empty(
-    #     [it_wkr_cnt, it_occ_cnt - 1], dtype=float)
-
-    # # ar_dmrl_acrs_iv1_cnd_j1_intr : a (I-1) x 1 array of "relative-share" coefficients, Eq. 5 intercept, compare I>1 to i=1, conditional on j=1
-    # ar_dmrl_acrs_iv1_cnd_j1_intr = np.empty([it_wkr_cnt - 1, ], dtype=float)
-    # # ar_dmrl_acrs_iv1_cnd_j1_slpe : a (I-1) x 1 array of "elasticity" coefficients, Eq. 5 slopes, compre i>1 to i=1
-    # ar_dmrl_acrs_iv1_cnd_j1_slpe = np.empty([it_wkr_cnt - 1, ], dtype=float)
-
-    # # Convert share values to matrix
-    # fl_elas = dc_ces[0]['pwr']
-    # mt_dmrl_share = np.empty([it_wkr_cnt, it_occ_cnt], dtype=float)
-    # for it_ipt in ls_it_ipt:
-    #     # Get worker and occupation index
-    #     it_wkr = dc_ces[it_ipt]['wkr']
-    #     it_occ = dc_ces[it_ipt]['occ']
-    #     fl_shr = dc_ces[it_ipt]['shr']
-    #     # Fill share matrix
-    #     mt_dmrl_share[it_wkr, it_occ] = fl_shr
-
-    # if verbose:
-    #     print(f'{np.sum(mt_dmrl_share)=}')
-
-    # # Fill in for step 1
-    # for it_wkr_ctr in np.arange(it_wkr_cnt):
-    #     fl_theta_i_1 = mt_dmrl_share[it_wkr_ctr, 0]
-
-    #     for it_occ_ctr in np.arange(it_occ_cnt - 1):
-    #         # Get psi and theta
-    #         fl_theta_i_j = mt_dmrl_share[it_wkr_ctr, it_occ_ctr+1]
-
-    #         # Compute
-    #         fl_dmrl_intr = cme_supt_equa_demand.cme_prod_ces_dmrl_intr(
-    #             fl_elas, fl_theta_i_j, fl_theta_i_1)
-    #         fl_dmrl_slpe = cme_supt_equa_demand.cme_prod_ces_dmrl_slpe(
-    #             fl_elas)
-
-    #         # Fill in
-    #         mt_dmrl_wthn_i_acrs_jv1_intr[it_wkr_ctr, it_occ_ctr] = fl_dmrl_intr
-    #         mt_dmrl_wthn_i_acrs_jv1_slpe[it_wkr_ctr, it_occ_ctr] = fl_dmrl_slpe
-
-    # # Fill in for step three
-    # fl_theta_1_1 = mt_dmrl_share[0, 0]
-    # for it_wkr_ctr in np.arange(it_wkr_cnt-1):
-    #     fl_theta_i_1 = mt_dmrl_share[it_wkr_ctr+1, 0]
-
-    #     # Compute
-    #     fl_dmrl_intr = cme_supt_equa_demand.cme_prod_ces_dmrl_intr(
-    #         fl_elas, fl_theta_i_1, fl_theta_1_1)
-    #     fl_dmrl_slpe = cme_supt_equa_demand.cme_prod_ces_dmrl_slpe(fl_elas)
-
-    #     # Fill in
-    #     ar_dmrl_acrs_iv1_cnd_j1_intr[it_wkr_ctr] = fl_dmrl_intr
-    #     ar_dmrl_acrs_iv1_cnd_j1_slpe[it_wkr_ctr] = fl_dmrl_slpe
-
-    # return {"mt_dmrl_share": mt_dmrl_share,
-    #         "fl_elas": fl_elas,
-    #         "mt_dmrl_wthn_i_acrs_jv1_intr": mt_dmrl_wthn_i_acrs_jv1_intr,
-    #         "mt_dmrl_wthn_i_acrs_jv1_slpe": mt_dmrl_wthn_i_acrs_jv1_slpe,
-    #         "ar_dmrl_acrs_iv1_cnd_j1_intr": ar_dmrl_acrs_iv1_cnd_j1_intr,
-    #         "ar_dmrl_acrs_iv1_cnd_j1_slpe": ar_dmrl_acrs_iv1_cnd_j1_slpe}
-
-
-def cme_equi_demand_dict_converter_nest(dc_ces, st_rela_shr_key='shc', ls_it_ipt=None, fl_elas=None,
+    
+def cme_equi_demand_dict_converter_nest(dc_ces,
+                                        st_rela_shr_key='shc',
+                                        ls_it_ipt=None, fl_elas=None,
                                         verbose=False):
     """Generate inputs for equilibrium solution nested
 
-    Wroked ofr nested or not nested
+    Work for nested or not nested
 
     Parameters
     ----------

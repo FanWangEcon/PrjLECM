@@ -63,11 +63,11 @@ def cme_prod_ces_solver(ar_price, ar_share,
 
     # rescale
     ar_opti_costmin_x = ar_sum_rho * fl_Q / fl_A
-    ar_opti_costmin_x
+    # ar_opti_costmin_x
 
     # weighted average of prices
     fl_mc_aggprice = (np.dot(ar_sum_rho, ar_price) / fl_A)
-    fl_mc_aggprice
+    # fl_mc_aggprice
 
     return ar_opti_costmin_x, fl_mc_aggprice
 

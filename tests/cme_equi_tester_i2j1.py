@@ -108,8 +108,8 @@ fl_itc_max = -1
 fl_slp_min = 0.5
 fl_slp_max = 0.5
 
-fl_power_min = 0.20
-fl_power_max = 0.20
+fl_power_min = -0.20
+fl_power_max = -0.20
 
 # 1.A Simulate
 # Simulate supply parameters
@@ -169,6 +169,7 @@ dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve_sfur(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone, dc_equi_solve_stwo, dc_equi_solve_sthr,
+    dc_demand_ces,
     verbose=bl_verbose_step)
 
 # 2.D Solve for nu_1 (steps 2 + 3 + 4 nested)
@@ -177,6 +178,7 @@ fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone,
+    dc_demand_ces,
     fl_output_target=fl_output_target,
     verbose_slve=bl_verbose_step,
     verbose=bl_verbose_slve)

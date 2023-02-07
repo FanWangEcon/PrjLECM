@@ -119,8 +119,9 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
                                       it_occ_types=2,
                                       fl_power_min=0.1,
                                       fl_power_max=0.8,
+                                      bl_simu_q=False,
                                       it_seed=123,
-                                      verbose=True):
+                                      verbose=True, tp_fl_share_rescalar=1):
     # it_worker_types = 2
     # it_occ_types = 2
     # fl_power_min = 0.1
@@ -128,7 +129,12 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
     # it_seed = 123
     np.random.seed(it_seed)
     mt_rand_coef_shares = np.random.rand(it_worker_types, it_occ_types)
-    mt_rand_coef_shares = mt_rand_coef_shares/np.sum(mt_rand_coef_shares)
+    # DEBUG: Was not sure if sum of share < 1 works, it does, note have to adjust lower total output since TFP is
+    # lower, but the optimal demand function solution will generate different results due to differeing TFP.
+    # mt_rand_coef_shares = (mt_rand_coef_shares/np.sum(mt_rand_coef_shares))/tp_fl_share_rescalar
+    mt_rand_coef_shares = (mt_rand_coef_shares / np.sum(mt_rand_coef_shares))
+    if bl_simu_q:
+        mt_rand_q = np.random.rand(it_worker_types, it_occ_types)
     fl_power = (np.random.uniform(
         low=fl_power_min, high=fl_power_max, size=(1,))).item()
 
@@ -138,10 +144,17 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
     ar_it_inputs = np.array([], dtype=int)
     for it_worker_type_ctr in np.arange(it_worker_types):
         for it_occ_type_ctr in np.arange(it_occ_types):
+
+            fl_qty = None
+            if bl_simu_q:
+                fl_qty = mt_rand_q[it_worker_type_ctr, it_occ_type_ctr]
+
             dc_cur_input = cme_simu_demand_ces_inner_dict(
                 it_lyr=1, it_prt=0,
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
-                fl_shr=mt_rand_coef_shares[it_worker_type_ctr, it_occ_type_ctr])
+                fl_shr=mt_rand_coef_shares[it_worker_type_ctr, it_occ_type_ctr],
+                fl_qty=fl_qty)
+
             it_input_key_ctr = it_input_key_ctr + 1
             dc_ces[it_input_key_ctr] = dc_cur_input
             ar_it_inputs = np.append(ar_it_inputs, it_input_key_ctr)

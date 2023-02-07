@@ -12,7 +12,7 @@ def cme_prod_ces_nest_output(dc_ces_flat, verbose=False, verbose_debug=False):
 
     Given quantities solved or simulated stored at bottom-most layer
     in `dc_ces_flat` flat nested-ces storage nested-dictionary, generate
-    all uppwer level quantities, with share and quantity parameters for 
+    all upper level quantities, with share and quantity parameters for 
     each sub-tree given information among children along each sub-branch. 
     Do this iteratively up until reach to top of the nesting tree. 
 
@@ -63,12 +63,12 @@ def cme_prod_ces_nest_output(dc_ces_flat, verbose=False, verbose_debug=False):
             fl_pwr = dc_parent['pwr']
             ar_it_ipt = dc_parent['ipt']
 
-            ar_shr = []
-            ar_qty = []
+            ar_shr = np.array([])
+            ar_qty = np.array([])
             for it_chd_key in ar_it_ipt:
                 dc_child = dc_ces_flat[it_chd_key]
-                ar_shr.append(dc_child['shr'])
-                ar_qty.append(dc_child['qty'])
+                ar_shr = np.append(ar_shr, dc_child['shr'])
+                ar_qty = np.append(ar_qty, dc_child['qty'])
 
             if verbose_debug:
                 print(f'{it_prt_key=} and {ar_it_ipt=}')

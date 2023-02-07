@@ -1,3 +1,4 @@
+import copy
 import pprint
 
 import numpy as np
@@ -12,7 +13,7 @@ import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
 
 
 def cme_equi_solve_nest_test(
-        bl_simu_params_of_simu=False, verbose=False, verbose_debug=False):
+        it_fixed_group=0, verbose=False, verbose_debug=False):
     """Testing Structure
 
     Parameters
@@ -24,7 +25,6 @@ def cme_equi_solve_nest_test(
     # 1. Simulated Nested Input Dictionary
 
     # 1.a. Parameters to simulate
-
     # 1.a.1. These two parameters matter for both demands and supply, defaults
     ar_it_chd_tre = [5, 2, 10]
     ar_it_occ_lyr = [1]
@@ -43,19 +43,47 @@ def cme_equi_solve_nest_test(
     fl_simu_supply_slp_max = 1.2
     it_simu_supply_seed = 456
 
+    if it_fixed_group == 101:
+        # Fixed 3 by 3 with default parameters above
+        ar_it_chd_tre = np.array([3, 3])
+        ar_it_occ_lyr = [2]
+    elif it_fixed_group == 102:
+        fl_output_target = 0.12716618330033197
+        ar_it_chd_tre = np.array([4, 2, 5])
+        ar_it_occ_lyr = [2, 3]
+        it_simu_demand_seed = 456280
+        it_simu_supply_seed = 441313
+
     # 1.a.4. Simulate
-    if bl_simu_params_of_simu:
+    if it_fixed_group is None or (it_fixed_group >= 1 and it_fixed_group <= 100):
         # Random output target
         fl_output_target = np.random.uniform(low=0.1, high=0.3, size=(1,))[0]
-        # 2 to 5 CES layers, each
-        ar_it_chd_tre = np.random.randint(
-            2, 10, size=np.random.randint(2, 5, size=1))
-        ar_it_occ_lyr = list(np.sort(np.random.choice(
-            np.arange(len(ar_it_chd_tre)) + 1, size=np.random.randint(1, len(ar_it_chd_tre)), replace=False)))
+        if it_fixed_group == 1:
+            # Test solve 5 by 5 problem with random params
+            ar_it_chd_tre = np.array([3, 3])
+            ar_it_occ_lyr = [2]
+        elif it_fixed_group == 2:
+            # Three layers testing
+            ar_it_chd_tre = np.array([2, 2, 3])
+            ar_it_occ_lyr = [2]
+        else:
+            # 2 to 5 CES layers, each
+            ar_it_chd_tre = np.random.randint(
+                2, 10, size=np.random.randint(2, 5, size=1))
+            ar_it_occ_lyr = list(np.sort(np.random.choice(
+                np.arange(len(ar_it_chd_tre)) + 1, size=np.random.randint(1, len(ar_it_chd_tre)), replace=False)))
         # Simulating random demand share and elasticity parameter seed
         it_simu_demand_seed = int(np.random.randint(1, 1e6, size=1))
         # Simulating random supply side "intercept" and "slope" parameters
         it_simu_supply_seed = int(np.random.randint(1, 1e6, size=1))
+
+    if verbose:
+        pprint.pprint('d-69828 Test Parameters:')
+        print(f'{fl_output_target=}')
+        print(f'{ar_it_chd_tre=}')
+        print(f'{ar_it_occ_lyr=}')
+        print(f'{it_simu_demand_seed=}')
+        print(f'{it_simu_supply_seed=}')
 
     # 1.a Demand
     dc_dc_ces_nested = cme_inpt_simu_demand.cme_simu_demand_params_ces_nested(
@@ -66,6 +94,9 @@ def cme_equi_solve_nest_test(
         bl_simu_q=False,
         verbose=False, verbose_debug=False)
     dc_ces_flat = dc_dc_ces_nested['dc_ces_flat']
+    if verbose:
+        print(f'{cme_inpt_parse.cme_parse_demand_lyrpwr(dc_ces_flat)=}')
+
     if verbose_debug:
         pprint.pprint('d-69828 Step 1 dc_ces_flat:')
         pprint.pprint(dc_ces_flat)
@@ -87,12 +118,15 @@ def cme_equi_solve_nest_test(
         verbose=False)
 
     # Run the iterative nested solution structure
-    cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
-                        fl_output_target=fl_output_target,
-                        it_iter_max=1e2, fl_iter_tol=1e-3,
-                        fl_solu_tol=1e-2,
-                        verbose=verbose, verbose_debug=verbose_debug)
+    dc_equi_solv_sfur, dc_equi_solve_nest_info = \
+        cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt,
+                            ar_splv_totl_acrs_i,
+                            fl_output_target=fl_output_target,
+                            it_iter_max=1e2, fl_iter_tol=1e-3,
+                            fl_solu_tol=1e-2,
+                            verbose=verbose, verbose_debug=verbose_debug)
 
+    return dc_equi_solve_nest_info
 
 def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
                         fl_output_target,
@@ -121,14 +155,13 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             pprint.pprint(dc_ces_flat)
 
         # 3. Generate equilibrium inputs matrixes from dicts and shc (1st) or sni (later) key
-        if (it_iter_ctr == 1):
+        if it_iter_ctr == 1:
             st_rela_shr_key = 'shc'
             # Do this only once:
             dc_sprl_intr_slpe = cme_equi_solve_gen_inputs.cme_equi_supply_dict_converter_nonest(
                 dc_supply_lgt, verbose=verbose_debug)
         else:
             st_rela_shr_key = 'sni'
-
         dc_dmrl_intr_slpe = cme_equi_solve_gen_inputs.cme_equi_demand_dict_converter_nest(
             dc_ces_flat, st_rela_shr_key=st_rela_shr_key,
             verbose=verbose_debug)
@@ -141,6 +174,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
             dc_dmrl_intr_slpe,
             dc_equi_solve_sone,
+            dc_ces_flat,
             fl_output_target=fl_output_target,
             verbose_slve=False,
             verbose=verbose_debug)
@@ -244,8 +278,39 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
 
 if __name__ == "__main__":
     import timeit
+    it_which_test = 2
 
-    start = timeit.default_timer()
-    cme_equi_solve_nest_test(bl_simu_params_of_simu=False, verbose=True)
-    stop = timeit.default_timer()
-    print('Time: ', stop - start)
+    # INVESTIGATE CASE 101
+    # Investigate
+    # (
+    #             dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
+    #             dc_dmrl_intr_slpe,
+    #             dc_equi_solve_sone,
+    #             fl_spsh_j0_i1=fl_spsh_j0_i1,
+    #             verbose=verbose_slve)
+
+    if it_which_test == 1:
+        start = timeit.default_timer()
+        cme_equi_solve_nest_test(it_fixed_group=101, verbose=True)
+        stop = timeit.default_timer()
+        print('Time: ', stop - start)
+
+    # Test random 5 occ and 5 workers, is there always solution? YES
+    if it_which_test == 2:
+        ls_it_fixed_group = [3]
+        for it_fixed_group in ls_it_fixed_group:
+            it_2by2_test_cnt = 100
+            it_failed_counter = 0
+            it_failed_flag1 = 0
+            it_ctr = 0
+            while it_ctr <= it_2by2_test_cnt:
+                it_ctr = it_ctr + 1
+                dc_equi_solve_nest_info = cme_equi_solve_nest_test(it_fixed_group=it_fixed_group, verbose=True)
+                bl_failed = dc_equi_solve_nest_info['failed']
+                it_failed_flag = dc_equi_solve_nest_info['failed_flag']
+                if bl_failed:
+                    it_failed_counter = it_failed_counter + 1
+                if it_failed_flag == 1:
+                    it_failed_flag1 = it_failed_flag1 + 1
+                    print(f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_ctr=:.0F} ({it_fixed_group=})')
+            print(f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_2by2_test_cnt=:.0F} ({it_fixed_group=})')

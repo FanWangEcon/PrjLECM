@@ -85,6 +85,7 @@ fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone,
+    dc_demand_ces,
     fl_output_target=fl_output_target,
     verbose_slve=bl_verbose_step,
     verbose=bl_verbose_slve)
@@ -113,6 +114,9 @@ fl_elas = dc_dmrl_intr_slpe["fl_elas"]
 # this is general except for this last spot which does not work with nested problem
 fl_Q = fl_output_target
 fl_A = 1
+# when total share values scale down, that will impact optimal output solution from
+# cme_dslv_opti.cme_prod_ces_solver, because that is effectively changing aggregate productivity,
+# but all optimal choices stay proportionally invariant.
 ar_opti_costmin_x_flat, fl_mc_aggprice = cme_dslv_opti.cme_prod_ces_solver(
     ar_wglv_all_flat,
     ar_dmrl_share_flat,

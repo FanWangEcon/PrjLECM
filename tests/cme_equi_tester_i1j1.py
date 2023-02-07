@@ -112,6 +112,7 @@ fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone,
+    dc_demand_ces,
     fl_output_target=fl_output_target,
     verbose_slve=bl_verbose_step,
     verbose=bl_verbose_slve)
