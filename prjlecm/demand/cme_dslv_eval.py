@@ -5,10 +5,14 @@ import numpy as np
 
 import prjlecm.equa.cme_supt_equa_demand as cme_supt_equa_demand
 import prjlecm.input.cme_inpt_parse as cme_inpt_parse
+import prjlecm.demand.cme_dslv_opti as cme_dslv_opti
 
 
-def cme_prod_ces_nest_output(dc_ces_flat, verbose=False, verbose_debug=False):
+def cme_prod_ces_nest_agg_q_p(dc_ces_flat, st_solve_type='qty', verbose=False, verbose_debug=False):
     """Evaluates nested-CES production function 
+
+    Nested-ces aggregate production (q) and aggregate price (p) function.
+    Aggregation each subnest layer one by one.
 
     Given quantities solved or simulated stored at bottom-most layer
     in `dc_ces_flat` flat nested-ces storage nested-dictionary, generate
@@ -65,23 +69,36 @@ def cme_prod_ces_nest_output(dc_ces_flat, verbose=False, verbose_debug=False):
 
             ar_shr = np.array([])
             ar_qty = np.array([])
+            ar_wge = np.array([])
             for it_chd_key in ar_it_ipt:
                 dc_child = dc_ces_flat[it_chd_key]
                 ar_shr = np.append(ar_shr, dc_child['shr'])
                 ar_qty = np.append(ar_qty, dc_child['qty'])
+                ar_wge = np.append(ar_wge, dc_child['wge'])
 
             if verbose_debug:
                 print(f'{it_prt_key=} and {ar_it_ipt=}')
                 print(f'{ar_shr=}')
                 print(f'{ar_qty=}')
+                print(f'{ar_wge=}')
                 print(f'{fl_pwr=}')
 
             # 6. aggregate using cme_prod_ces
             # Generate output
-            fl_qty_parent = cme_supt_equa_demand.cme_prod_ces(
-                fl_elas=fl_pwr, ar_share=ar_shr, ar_input=ar_qty)
-            # store output
-            dc_ces_flat[it_prt_key]['qty'] = fl_qty_parent
+            if st_solve_type == "qty":
+                fl_qty_parent = cme_supt_equa_demand.cme_prod_ces(
+                    fl_elas=fl_pwr, ar_share=ar_shr, ar_input=ar_qty)
+                # store output
+                dc_ces_flat[it_prt_key]['qty'] = fl_qty_parent
+            elif st_solve_type == "wge": 
+                __ , fl_mc_aggprice = cme_dslv_opti.cme_prod_ces_solver(
+                    ar_price=ar_wge, ar_share=ar_shr, fl_elasticity=fl_pwr,
+                    fl_Q=None, fl_A=1)
+                # store output
+                dc_ces_flat[it_prt_key]['wge'] = fl_mc_aggprice
+            else:
+                st_error = 'st_solve_type=' + st_solve_type
+                raise ValueError(st_error)
 
     # Print
     if verbose:
@@ -263,39 +280,57 @@ if __name__ == "__main__":
 
     import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
 
-    ls_bl_simu_q = [True]
-    for bl_simu_q in ls_bl_simu_q:
+    ls_it_simu_q_p = [1,2,3]
+    ls_it_simu_q_p = [2]
+    for it_simu_q_p in ls_it_simu_q_p:
+        
+        if it_simu_q_p == 1:
+            bl_simu_q = False
+            bl_simu_p = False
+        elif it_simu_q_p == 2:
+            bl_simu_q = True
+            bl_simu_p = False
+        elif it_simu_q_p == 3:
+            bl_simu_q = False
+            bl_simu_p = True 
 
         # A. Simulates Nested-ces, with share, power, an possiblity quantities
         # elasticity of substitution homogeneous within layer
         dc_dc_ces_nested = cme_inpt_simu_demand.cme_simu_demand_params_ces_nested(
             ar_it_chd_tre=[2, 2], ar_it_occ_lyr=[2],
-            fl_power_min=0.8,
-            fl_power_max=0.8,
+            fl_power_min=0.5,
+            fl_power_max=0.5,
             it_seed=222,
             bl_simu_q=bl_simu_q,
+            bl_simu_p=bl_simu_p,
             verbose=True, verbose_debug=False)
         dc_ces_flat = dc_dc_ces_nested['dc_ces_flat']
 
         # B. Generate higher layer quantities, evaluate ces production
         # output dc_ces_flat is the same dict as the input, but with updated info
         if bl_simu_q:
-            dc_ces_flat = cme_prod_ces_nest_output(
+            st_solve_type = 'qty'
+        if bl_simu_p:
+            st_solve_type = 'wge'
+        if bl_simu_p or bl_simu_q:
+            dc_ces_flat = cme_prod_ces_nest_agg_q_p(
+                dc_ces_flat, st_solve_type = st_solve_type, verbose=True, verbose_debug=True)
+
+        if bl_simu_q:
+            # C. Given quantities at all levels, compute MPL for nodes
+            dc_ces_flat = cme_prod_ces_nest_mpl(
                 dc_ces_flat, verbose=True, verbose_debug=True)
 
-        # C. Given quantities at all levels, compute MPL for nodes
-        dc_ces_flat = cme_prod_ces_nest_mpl(
-            dc_ces_flat, verbose=True, verbose_debug=True)
-
-        # testing when power=power at all layers, are the share ratio
-        # consistent with the drc ratio
-        if bl_simu_q:
+            # testing when power=power at all layers, are the share ratio
+            # consistent with the drc ratio
             ls_it_numerator = [1, 1]
             ls_it_denominator = [2, 4]
             for it_nume, it_deno in zip(ls_it_numerator, ls_it_denominator):
                 fl_within_nest_rela_drc = dc_ces_flat[it_nume]['sni'] / \
-                                          dc_ces_flat[it_deno]['sni']
+                                        dc_ces_flat[it_deno]['sni']
                 fl_within_nest_rela_shr = dc_ces_flat[it_nume]['shc'] / \
-                                          dc_ces_flat[it_deno]['shc']
+                                        dc_ces_flat[it_deno]['shc']
                 print(f'{it_nume=} and {it_deno=}')
                 print(f'{fl_within_nest_rela_drc=} and {fl_within_nest_rela_shr=}')
+        else:
+            pprint.pprint(dc_ces_flat)

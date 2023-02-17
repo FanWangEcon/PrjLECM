@@ -303,7 +303,7 @@ def cme_equi_solve_sfur(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         fl_qtlv = pd_qtlv_all.iloc[it_wkr_idx, it_occ_idx + 1]
         # Replace highest/bottommost layer's qty terms with equi solution qs.s
         dc_ces[it_key_idx]['qty'] = fl_qtlv
-    dc_ces = cme_dslv_eval.cme_prod_ces_nest_output(
+    dc_ces = cme_dslv_eval.cme_prod_ces_nest_agg_q_p(
         dc_ces, verbose=False, verbose_debug=False)
     fl_ces_output = dc_ces[it_lyr0_key]['qty']
 
