@@ -118,7 +118,8 @@ def cme_equi_solve_nest_test(
         verbose=False)
 
     # Run the iterative nested solution structure
-    dc_equi_solv_sfur, dc_equi_solve_nest_info = \
+    dc_ces_flat, dc_supply_lgt, \
+        dc_equi_solv_sfur, dc_equi_solve_nest_info = \
         cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt,
                             ar_splv_totl_acrs_i,
                             fl_output_target=fl_output_target,
@@ -126,7 +127,8 @@ def cme_equi_solve_nest_test(
                             fl_solu_tol=1e-2,
                             verbose=verbose, verbose_debug=verbose_debug)
 
-    return dc_equi_solve_nest_info
+    return dc_ces_flat, dc_supply_lgt, \
+        dc_equi_solv_sfur, dc_equi_solve_nest_info, dc_supply_lgt, ar_splv_totl_acrs_i
 
 def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
                         fl_output_target,
@@ -201,7 +203,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
         pd_qtlv_all_last = pd_qtlv_all
         pd_wglv_all_last = pd_wglv_all
 
-        # 5. Update Input Dicts with bottom (highest-layer) Qs
+        # 5. Update Input Dicts with bottom (highest-layer) Qs, needed for sni
         __, ls_maxlyr_key, __ = cme_inpt_parse.cme_parse_demand_tbidx(
             dc_ces_flat)
         for it_key_idx in ls_maxlyr_key:
@@ -220,7 +222,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             pprint.pprint(dc_ces_flat)
 
         # 6. Populate higher level Qs in Input Dicts
-        dc_ces_flat = cme_dslv_eval.cme_prod_ces_nest_output(
+        dc_ces_flat = cme_dslv_eval.cme_prod_ces_nest_agg_q_p(
             dc_ces_flat, verbose=verbose_debug, verbose_debug=False)
 
         # 7. Go back to step 2 and 6, iterate over that, but now generate and use sni key rather than shc key
@@ -246,6 +248,32 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
                                      for i in np.arange(np.shape(mt_iter_track)[0])],
                                  columns=["diff_joint", "ces_output"])
 
+    # Update demand and supply dictionaries with equilibrium wage
+    # if solutions are successful
+    if failed is False:
+        # DEMAND DICT: Populate solution wage to lowest level
+        for it_key_idx in ls_maxlyr_key:
+            # Get wkr and occ index for current child
+            it_wkr_idx = dc_ces_flat[it_key_idx]['wkr']
+            it_occ_idx = dc_ces_flat[it_key_idx]['occ']
+
+            # wrk index matches with rows, 1st row is first worker, wkr index 0
+            # occ + 0 because first column is NOT leisure
+            fl_wglv = pd_wglv_all.iloc[it_wkr_idx, it_occ_idx + 0]
+            # Replace highest/bottommost layer's qty terms with equi solution qs.s
+            dc_ces_flat[it_key_idx]['wge'] = fl_wglv
+
+        # SUPPLY DICT: population solution wage
+        __, ls_maxlyr_supply_key, __ = cme_inpt_parse.cme_parse_demand_tbidx(
+            dc_supply_lgt)
+        for it_key_idx in ls_maxlyr_supply_key:
+            it_wkr_idx = dc_supply_lgt[it_key_idx]['wkr']
+            it_occ_idx = dc_supply_lgt[it_key_idx]['occ']
+            fl_wglv = pd_wglv_all.iloc[it_wkr_idx, it_occ_idx + 0]
+            fl_qtlv = pd_qtlv_all.iloc[it_wkr_idx, it_occ_idx + 0]
+            dc_supply_lgt[it_key_idx]['wge'] = fl_wglv
+            dc_supply_lgt[it_key_idx]['qty'] = fl_qtlv
+
     # More detailed info output
     # print(
     #     f'CES dimension, nest layers:{ar_it_chd_tre=}, occ layers:{ar_it_occ_lyr}')
@@ -264,6 +292,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
         'fl_ces_output': fl_ces_output,
         'pd_iter_track': pd_iter_track
     }
+
     if verbose:
         if dc_equi_solv_sfur is not None:
             for st_key, dc_val in dc_equi_solv_sfur.items():
@@ -273,7 +302,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             print('d-69828, dc_equi_solve_nest_info, key:' + str(st_key))
             pprint.pprint(dc_val, width=10)
 
-    return dc_equi_solv_sfur, dc_equi_solve_nest_info
+    return dc_ces_flat, dc_supply_lgt, dc_equi_solv_sfur, dc_equi_solve_nest_info
 
 
 if __name__ == "__main__":
@@ -305,7 +334,9 @@ if __name__ == "__main__":
             it_ctr = 0
             while it_ctr <= it_2by2_test_cnt:
                 it_ctr = it_ctr + 1
-                dc_equi_solve_nest_info = cme_equi_solve_nest_test(it_fixed_group=it_fixed_group, verbose=True)
+                dc_ces_flat, dc_supply_lgt, \
+                    dc_equi_solv_sfur, dc_equi_solve_nest_info, dc_supply_lgt, ar_splv_totl_acrs_i = \
+                    cme_equi_solve_nest_test(it_fixed_group=it_fixed_group, verbose=True)
                 bl_failed = dc_equi_solve_nest_info['failed']
                 it_failed_flag = dc_equi_solve_nest_info['failed_flag']
                 if bl_failed:

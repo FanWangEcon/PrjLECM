@@ -4,7 +4,8 @@ import pprint
 
 def cme_simu_supply_lgt_dict(
         it_wkr=None, it_occ=None,
-        fl_itc=None, fl_slp=None):
+        fl_itc=None, fl_slp=None,
+        fl_wge=None, fl_qty=None, fl_qtp=None):
 
     # if (it_wkr is not None):
     #     it_wkr = it_wkr + 100
@@ -17,7 +18,14 @@ def cme_simu_supply_lgt_dict(
         # itc = intercept
         'itc': fl_itc,
         # slp = slope, the log wage effect term
-        'slp': fl_slp
+        'slp': fl_slp,
+        # Wage
+        'wge': fl_wge,
+        'qty': fl_qty,
+        # potential number of workers
+        'qtp': fl_qtp,
+        # layer (only one layer, this is so that certain layer based function works
+        'lyr': 0
     }
 
 
@@ -60,9 +68,10 @@ def cme_simu_supply_params_lgt(it_worker_types=2,
         for it_occ_type_ctr in np.arange(it_occ_types):
 
             dc_cur_input = cme_simu_supply_lgt_dict(
-                it_worker_type_ctr, it_occ_type_ctr,
-                mt_rand_coef_intcpt[it_worker_type_ctr, it_occ_type_ctr],
-                ar_rand_coef_slope[it_worker_type_ctr])
+                it_wkr = it_worker_type_ctr, it_occ = it_occ_type_ctr,
+                fl_itc = mt_rand_coef_intcpt[it_worker_type_ctr, it_occ_type_ctr],
+                fl_slp = ar_rand_coef_slope[it_worker_type_ctr],
+                fl_qtp = ar_splv_totl_acrs_i[it_worker_type_ctr])
 
             it_input_key_ctr = it_input_key_ctr + 1
             dc_lgt[it_input_key_ctr] = dc_cur_input

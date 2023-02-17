@@ -119,7 +119,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
                                       it_occ_types=2,
                                       fl_power_min=0.1,
                                       fl_power_max=0.8,
-                                      bl_simu_q=False,
+                                      bl_simu_q=False, bl_simu_p=False,
                                       it_seed=123,
                                       verbose=True, tp_fl_share_rescalar=1):
     # it_worker_types = 2
@@ -135,6 +135,8 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
     mt_rand_coef_shares = (mt_rand_coef_shares / np.sum(mt_rand_coef_shares))
     if bl_simu_q:
         mt_rand_q = np.random.rand(it_worker_types, it_occ_types)
+    if bl_simu_p:
+        mt_rand_p = np.random.rand(it_worker_types, it_occ_types)
     fl_power = (np.random.uniform(
         low=fl_power_min, high=fl_power_max, size=(1,))).item()
 
@@ -148,12 +150,16 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
             fl_qty = None
             if bl_simu_q:
                 fl_qty = mt_rand_q[it_worker_type_ctr, it_occ_type_ctr]
+            fl_wge = None
+            if bl_simu_p:
+                fl_wge = mt_rand_p[it_worker_type_ctr, it_occ_type_ctr]
+
 
             dc_cur_input = cme_simu_demand_ces_inner_dict(
                 it_lyr=1, it_prt=0,
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
                 fl_shr=mt_rand_coef_shares[it_worker_type_ctr, it_occ_type_ctr],
-                fl_qty=fl_qty)
+                fl_qty=fl_qty, fl_wge=fl_wge)
 
             it_input_key_ctr = it_input_key_ctr + 1
             dc_ces[it_input_key_ctr] = dc_cur_input
@@ -175,7 +181,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
 def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1],
                                       fl_power_min=0.1,
                                       fl_power_max=0.8,
-                                      bl_simu_q=False,
+                                      bl_simu_q=False, bl_simu_p=False,
                                       it_seed=123,
                                       verbose=False, verbose_debug=False):
     """Simulated nested-ces tree and flattened dict
@@ -246,6 +252,8 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
         to be drawn that is homogeneous within layer and possibly heterogeneous across layers, by default 0.8
     bl_simu_q : boolean, optional
         Whether to generate random quantities at the bottom layer, by default False.
+    bl_simu_p : boolean, optional
+        Whether to generate random prices at the bottom layer, by default False.
     it_seed : int, optional
         Random seed for drawing parameters, by default 123
     verbose : bool, optional
@@ -294,6 +302,8 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     ar_rand_coef_shares = np.random.rand(np.sum(ar_it_tre_up_cnt))
     if bl_simu_q:
         ar_rand_q = np.random.rand(ar_it_tre_up_cnt[0])
+    if bl_simu_p:
+        ar_rand_p = np.random.rand(ar_it_tre_up_cnt[0])
     ar_power = np.random.uniform(
         low=fl_power_min, high=fl_power_max, size=(it_layer_cnt,))
 
@@ -322,10 +332,16 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
         # loop over the list of bottom children
         for it_chd_ctr, it_child in enumerate(ar_it_children):
             # Possibly generating random quantities
+            if bl_simu_p:
+                fl_wge = ar_rand_p[it_child-1]
+            else:
+                fl_wge = None
+
             if bl_simu_q:
                 fl_qty = ar_rand_q[it_child-1]
             else:
                 fl_qty = None
+
             # occ and wkr index pre-calculated
             it_occ_idx = ls_it_occ_idx[it_child-1]
             it_wkr_idx = ls_it_wkr_idx[it_child-1]
@@ -341,7 +357,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
                 it_wkr=it_wkr_idx, it_occ=it_occ_idx,
                 fl_pwr=fl_power, fl_shr=fl_shr,
                 ar_it_ipt=ar_it_ipt,
-                fl_qty=fl_qty)
+                fl_qty=fl_qty, fl_wge=fl_wge)
 
     if verbose_debug:
         pprint.pprint(dc_ces_keys_tree, width=10)
@@ -456,4 +472,5 @@ if __name__ == "__main__":
         fl_power_max=0.8,
         it_seed=123,
         bl_simu_q=True,
+        bl_simu_p=True,
         verbose=True, verbose_debug=True)

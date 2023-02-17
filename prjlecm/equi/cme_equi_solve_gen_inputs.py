@@ -34,17 +34,27 @@ def cme_equi_supply_dict_converter_nonest(dc_supply_lgt, verbose=False):
 
     # Convert share values to matrix
     mt_sprl_intr = np.empty([it_wkr_cnt, it_occ_cnt], dtype=float)
+    # wages stored in the supply problem matrixes, might be all NONE
+    # store so that demand and supply dcts are symmetric and can be grabbed out for solving
+    # optimal supply problem given dc input.
+    mt_splv_wge = np.empty([it_wkr_cnt, it_occ_cnt], dtype=float)
     ar_sprl_slpe = np.empty([it_wkr_cnt], dtype=float)
+    # potential worker count, might be NONE
+    ar_splv_qtp = np.empty([it_wkr_cnt], dtype=float)
     for it_idx in ls_it_idx:
         # Get worker and occupation index
         it_wkr = dc_supply_lgt[it_idx]['wkr']
         it_occ = dc_supply_lgt[it_idx]['occ']
         fl_itc = dc_supply_lgt[it_idx]['itc']
         fl_slp = dc_supply_lgt[it_idx]['slp']
+        fl_wge = dc_supply_lgt[it_idx]['wge']
+        fl_qtp = dc_supply_lgt[it_idx]['qtp']
         # Fill share matrix
         mt_sprl_intr[it_wkr, it_occ] = fl_itc
+        mt_splv_wge[it_wkr, it_occ] = fl_wge
         # These must be worker type-specific, otherwise can not generate lin in log regression
         ar_sprl_slpe[it_wkr] = fl_slp
+        ar_splv_qtp[it_wkr] = fl_qtp
 
     # Construct f
     for it_wkr_ctr in np.arange(it_wkr_cnt):
@@ -71,7 +81,9 @@ def cme_equi_supply_dict_converter_nonest(dc_supply_lgt, verbose=False):
         ar_sprl_wthn_i_acrs_j1v0_slpe[it_wkr_ctr] = fl_beta_i
 
     dc_sprl_intr_slpe = {"mt_sprl_intr": mt_sprl_intr,
+                         "mt_splv_wge": mt_splv_wge,
                          "ar_sprl_slpe": ar_sprl_slpe,
+                         "ar_splv_qtp": ar_splv_qtp,
                          "mt_sprl_wthn_i_acrs_jv1_intr": mt_sprl_wthn_i_acrs_jv1_intr,
                          "mt_sprl_wthn_i_acrs_jv1_slpe": mt_sprl_wthn_i_acrs_jv1_slpe,
                          "ar_sprl_wthn_i_acrs_j1v0_intr": ar_sprl_wthn_i_acrs_j1v0_intr,
@@ -280,7 +292,7 @@ if __name__ == "__main__":
             bl_simu_q=bl_simu_q,
             verbose=False, verbose_debug=False)
         dc_ces_flat = dc_dc_ces_nested['dc_ces_flat']
-        dc_ces_flat = cme_dslv_eval.cme_prod_ces_nest_output(
+        dc_ces_flat = cme_dslv_eval.cme_prod_ces_nest_agg_q_p(
             dc_ces_flat, verbose=False, verbose_debug=False)
         dc_ces_flat = cme_dslv_eval.cme_prod_ces_nest_mpl(
             dc_ces_flat, verbose=False, verbose_debug=False)
