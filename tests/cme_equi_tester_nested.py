@@ -3,13 +3,17 @@
 # TODO: Given prices, what are optimal nested CES allocation choices. Aggregation prices, and layer-specific choices. 
 
 import timeit
+import time
+from pathlib import Path
 
 import numpy as np
+import pandas as pd 
 
 import prjlecm.demand.cme_dslv_opti as cme_dslv_opti
 import prjlecm.equi.cme_equi_solve_nest as cme_equi_solve_nest
 import prjlecm.input.cme_inpt_parse as cme_inpt_parse
 import prjlecm.supply.cme_splv_opti as cme_splv_opti
+import prjlecm.input.cme_inpt_convert as cme_inpt_convert
 
 verbose = True
 
@@ -18,7 +22,7 @@ start = timeit.default_timer()
 dc_ces_flat, dc_supply_lgt, \
     dc_equi_solv_sfur, dc_equi_solve_nest_info, \
     dc_supply_lgt, ar_splv_totl_acrs_i = \
-    cme_equi_solve_nest.cme_equi_solve_nest_test(it_fixed_group=1, verbose=True)
+    cme_equi_solve_nest.cme_equi_solve_nest_test(it_fixed_group=3, verbose=True)
 stop = timeit.default_timer()
 print('Time: ', stop - start)
 # Get equilibium quantities and prices as matrixes
@@ -48,3 +52,28 @@ if verbose:
     print(f'{pd_qtlv_all_supply=}')
     print(f'{pd_qtlv_equi_vs_supply=}')
     print(f'{fl_diff_equi_supply=}')
+
+# 4. Supply and Demand Dictionaries to Pandas Dataframes
+# The pandas dataframes would be the input structures for estimation to obtain underlying parameters
+# The pandas dataframes are also provide the table format to store estimates parameters to simulate
+# equilibrium results
+tb_supply_lgt = cme_inpt_convert.cme_convert_dc2pd(dc_supply_lgt)
+tb_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat)
+if verbose:
+    pd.pandas.set_option('display.max_columns', None)
+    print(f'{tb_supply_lgt=}')
+    print(f'{tb_ces_flat=}')
+
+
+# 5. Export files
+srt_pydebug = Path.joinpath(Path.home(), "Downloads", "PrjLECM_Debug")
+srt_pydebug.mkdir(parents=True, exist_ok=True)
+# Files to export to csv
+spn_csv_path = Path.joinpath(srt_pydebug, 
+    f'{tb_supply_lgt=}'.split('=')[0] + '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
+tb_supply_lgt.to_csv(spn_csv_path, sep=",")
+print(f'{spn_csv_path=}')
+spn_csv_path = Path.joinpath(srt_pydebug, 
+    f'{tb_ces_flat=}'.split('=')[0] + '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
+tb_ces_flat.to_csv(spn_csv_path, sep=",")
+print(f'{spn_csv_path=}')

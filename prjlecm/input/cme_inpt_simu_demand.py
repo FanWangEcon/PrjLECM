@@ -260,19 +260,19 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
         _description_, by default True
     """
     # We multiple layers, and need to generate power terms and share parameters at each layer.
-    # A. This is a tree structure, but do not need to do it too formally
-    # list of of lists
-    # Single layer
-    ls_ls_it_itp = [1, 2, 3, 4]
-    # Multiple layer fully specified tree
-    ls_ls_it_ipt = {
-        1: [2, 3],
-        4: [5, 6, 7],
-        8: {
-            9: [10, 11],
-            12: [13, 14]
-        }
-    }
+    # # A. This is a tree structure, but do not need to do it too formally
+    # # list of of lists
+    # # Single layer
+    # ls_ls_it_itp = [1, 2, 3, 4]
+    # # Multiple layer fully specified tree
+    # ls_ls_it_ipt = {
+    #     1: [2, 3],
+    #     4: [5, 6, 7],
+    #     8: {
+    #         9: [10, 11],
+    #         12: [13, 14]
+    #     }
+    # }
 
     # Generate work and occ keys
     ls_mnest_wrk_occ_keys = cme_simu_demand_mnest_wkr_occ_keys(
