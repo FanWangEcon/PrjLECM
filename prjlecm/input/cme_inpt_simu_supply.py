@@ -13,7 +13,10 @@ def cme_simu_supply_lgt_dict(
     #     it_occ = it_occ + 100
 
     return {
+        # wkr type starts at 0
         'wkr': it_wkr,
+        # 0 is not leisure, it's the first work category, leisure is not stored here
+        # leisure can be found from: qtp - sum(qty) from the different occ conditional on wkr
         'occ': it_occ,
         # itc = intercept
         'itc': fl_itc,

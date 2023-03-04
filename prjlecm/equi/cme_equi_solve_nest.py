@@ -66,6 +66,10 @@ def cme_equi_solve_nest_test(
             # Three layers testing
             ar_it_chd_tre = np.array([2, 2, 3])
             ar_it_occ_lyr = [2]
+        elif it_fixed_group == 3:
+            # Three layers testing
+            ar_it_chd_tre = np.array([2, 3, 2, 10])
+            ar_it_occ_lyr = [2]
         else:
             # 2 to 5 CES layers, each
             ar_it_chd_tre = np.random.randint(
@@ -172,7 +176,8 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
         dc_equi_solve_sone = cme_equi_solve.cme_equi_solve_sone(
             dc_sprl_intr_slpe, dc_dmrl_intr_slpe,
             verbose=verbose_debug)
-        fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
+        fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = \
+            cme_equi_solve.cme_equi_solve(
             dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
             dc_dmrl_intr_slpe,
             dc_equi_solve_sone,
@@ -270,7 +275,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             it_wkr_idx = dc_supply_lgt[it_key_idx]['wkr']
             it_occ_idx = dc_supply_lgt[it_key_idx]['occ']
             fl_wglv = pd_wglv_all.iloc[it_wkr_idx, it_occ_idx + 0]
-            fl_qtlv = pd_qtlv_all.iloc[it_wkr_idx, it_occ_idx + 0]
+            fl_qtlv = pd_qtlv_all.iloc[it_wkr_idx, it_occ_idx + 1]
             dc_supply_lgt[it_key_idx]['wge'] = fl_wglv
             dc_supply_lgt[it_key_idx]['qty'] = fl_qtlv
 
@@ -288,6 +293,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
         # 'ar_it_chd_tre': ar_it_chd_tre,
         # 'ar_it_occ_lyr': ar_it_occ_lyr,
         # 'ar_pwr_across_layers': ar_pwr_across_layers,
+        'fl_ces_output_max': fl_ces_output_max,
         'fl_output_target': fl_output_target,
         'fl_ces_output': fl_ces_output,
         'pd_iter_track': pd_iter_track

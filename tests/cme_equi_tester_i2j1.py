@@ -174,7 +174,7 @@ dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve_sfur(
 
 # 2.D Solve for nu_1 (steps 2 + 3 + 4 nested)
 fl_output_target = 0.5
-fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
+fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = cme_equi_solve.cme_equi_solve(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone,

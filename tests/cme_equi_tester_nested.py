@@ -2,20 +2,21 @@
 # TODO: Rely on the existing tester structure in cme_equi_solve_nest, obtain outputs, and solves CES nested
 # TODO: Given prices, what are optimal nested CES allocation choices. Aggregation prices, and layer-specific choices. 
 
-import timeit
 import time
+import timeit
 from pathlib import Path
 
 import numpy as np
-import pandas as pd 
+import pandas as pd
 
 import prjlecm.demand.cme_dslv_opti as cme_dslv_opti
 import prjlecm.equi.cme_equi_solve_nest as cme_equi_solve_nest
+import prjlecm.input.cme_inpt_convert as cme_inpt_convert
 import prjlecm.input.cme_inpt_parse as cme_inpt_parse
 import prjlecm.supply.cme_splv_opti as cme_splv_opti
-import prjlecm.input.cme_inpt_convert as cme_inpt_convert
 
 verbose = True
+bl_pandas_out = True
 
 # 1. Solve the equilibrium problem
 start = timeit.default_timer()
@@ -64,16 +65,18 @@ if verbose:
     print(f'{tb_supply_lgt=}')
     print(f'{tb_ces_flat=}')
 
-
 # 5. Export files
-srt_pydebug = Path.joinpath(Path.home(), "Downloads", "PrjLECM_Debug")
-srt_pydebug.mkdir(parents=True, exist_ok=True)
-# Files to export to csv
-spn_csv_path = Path.joinpath(srt_pydebug, 
-    f'{tb_supply_lgt=}'.split('=')[0] + '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
-tb_supply_lgt.to_csv(spn_csv_path, sep=",")
-print(f'{spn_csv_path=}')
-spn_csv_path = Path.joinpath(srt_pydebug, 
-    f'{tb_ces_flat=}'.split('=')[0] + '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
-tb_ces_flat.to_csv(spn_csv_path, sep=",")
-print(f'{spn_csv_path=}')
+if bl_pandas_out:
+    srt_pydebug = Path.joinpath(Path.home(), "Downloads", "PrjLECM_Debug")
+    srt_pydebug.mkdir(parents=True, exist_ok=True)
+    # Files to export to csv
+    spn_csv_path = Path.joinpath(srt_pydebug,
+                                 f'{tb_supply_lgt=}'.split('=')[0] +
+                                 '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
+    tb_supply_lgt.to_csv(spn_csv_path, sep=",")
+    print(f'{spn_csv_path=}')
+    spn_csv_path = Path.joinpath(srt_pydebug,
+                                 f'{tb_ces_flat=}'.split('=')[0] +
+                                 '-' + time.strftime("%Y%m%d-%H%M%S") + '.csv')
+    tb_ces_flat.to_csv(spn_csv_path, sep=",")
+    print(f'{spn_csv_path=}')

@@ -388,7 +388,7 @@ def cme_equi_solve(dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
                 print('d-257707 key:' + str(st_key))
                 print(dc_val)
 
-    return fl_nu1_solved, dc_equi_solv_sfur
+    return fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max
 
 
 if __name__ == "__main__":
@@ -487,7 +487,7 @@ if __name__ == "__main__":
 
     # solve for nu_1
     fl_output_target = 0.3
-    fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve(
+    fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = cme_equi_solve(
         dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
         dc_dmrl_intr_slpe,
         dc_equi_solve_sone,

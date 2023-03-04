@@ -55,7 +55,9 @@ def cme_supply_lgt_solver(dc_supply_lgt,
                 it_occ_key = dc_supply_lgt[it_key]["occ"]
                 it_wkr_key = dc_supply_lgt[it_key]["wkr"]
                 if (it_occ_key == it_occ_ctr) and (it_wkr_key == it_wkr_ctr):
-                    dc_supply_lgt[it_key]['qty'] = mt_splv_all[it_wkr_ctr, it_occ_ctr]
+                    # it_occ_ctr + 1 because mt_splv_all 1st column is leisure
+                    # but dc_supply_lgt does not store leisure info, occ = 0 is work category 1
+                    dc_supply_lgt[it_key]['qty'] = mt_splv_all[it_wkr_ctr, it_occ_ctr + 1]
     
     # 4. parse to table 
     pd_qtlv_all = pd.DataFrame(

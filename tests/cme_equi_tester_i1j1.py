@@ -108,7 +108,7 @@ mt_eqrl_qnty_wthn_i_acrs_jv1 = dc_equi_solve_sone["mt_eqrl_qnty_wthn_i_acrs_jv1"
 
 # 2.C Solve for nu_1 (steps 2 + 3 + 4 nested)
 fl_output_target = 0.5
-fl_nu1_solved, dc_equi_solv_sfur = cme_equi_solve.cme_equi_solve(
+fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = cme_equi_solve.cme_equi_solve(
     dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
     dc_dmrl_intr_slpe,
     dc_equi_solve_sone,
