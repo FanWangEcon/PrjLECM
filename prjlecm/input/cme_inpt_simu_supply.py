@@ -12,7 +12,14 @@ def cme_simu_supply_lgt_dict(
     # if (it_occ is not None):
     #     it_occ = it_occ + 100
 
-    return {
+    dc_type_return = {
+        'wkr': int, 'occ': int,
+        'itc': float, 'slp': float,
+        'wge': float, 'qty': float,
+        'qtp': float,
+        'lyr': int
+    }
+    dc_val_return = {
         # wkr type starts at 0
         'wkr': it_wkr,
         # 0 is not leisure, it's the first work category, leisure is not stored here
@@ -30,6 +37,8 @@ def cme_simu_supply_lgt_dict(
         # layer (only one layer, this is so that certain layer based function works
         'lyr': 0
     }
+
+    return dc_val_return, dc_type_return
 
 
 def cme_simu_supply_params_lgt(it_worker_types=2,
@@ -71,7 +80,7 @@ def cme_simu_supply_params_lgt(it_worker_types=2,
     for it_worker_type_ctr in np.arange(it_worker_types):
         for it_occ_type_ctr in np.arange(it_occ_types):
 
-            dc_cur_input = cme_simu_supply_lgt_dict(
+            dc_cur_input, _ = cme_simu_supply_lgt_dict(
                 it_wkr = it_worker_type_ctr, it_occ = it_occ_type_ctr,
                 fl_itc = mt_rand_coef_intcpt[it_worker_type_ctr, it_occ_type_ctr],
                 fl_slp = ar_rand_coef_slope[it_worker_type_ctr],

@@ -7,12 +7,14 @@ import pandas as pd
 import prjlecm.demand.cme_dslv_eval as cme_dslv_eval
 import prjlecm.equi.cme_equi_solve as cme_equi_solve
 import prjlecm.equi.cme_equi_solve_gen_inputs as cme_equi_solve_gen_inputs
+import prjlecm.input.cme_inpt_gateway as cme_inpt_gateway
 import prjlecm.input.cme_inpt_parse as cme_inpt_parse
 import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
 import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
 
 
 def cme_equi_solve_nest_test(
+        dc_load_path=None,
         it_fixed_group=0, verbose=False, verbose_debug=False):
     """Testing Structure
 
@@ -21,105 +23,25 @@ def cme_equi_solve_nest_test(
     bl_simu_params_of_simu : bool, optional
         If True, will use default parameters, if False, randomly draw parameters, by default False
     """
+    
+    # Generate random or fixed parameters
+    if dc_load_path is None:
+        dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_simu(
+            it_fixed_group=it_fixed_group,
+            verbose=verbose, verbose_debug=verbose_debug)
+    else:
+        dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_load(
+            spt_path_demand = dc_load_path['spt_path_demand'],
+            snm_file_demand = dc_load_path['snm_file_demand'],
+            spt_path_supply = dc_load_path['spt_path_supply'],
+            snm_file_supply = dc_load_path['snm_file_supply'],
+            verbose = verbose)
 
-    # 1. Simulated Nested Input Dictionary
-
-    # 1.a. Parameters to simulate
-    # 1.a.1. These two parameters matter for both demands and supply, defaults
-    ar_it_chd_tre = [5, 2, 10]
-    ar_it_occ_lyr = [1]
-
-    # 1.a.2. Demand side parameter, defaults
-    fl_output_target = 0.2
-    it_simu_demand_seed = 123
-    # the two parameters below are bounds, they do not need to be simulated.
-    fl_simu_demand_power_min = -0.1
-    fl_simu_demand_power_max = 0.9
-
-    # 1.a.3. Supply side parameters, defauls
-    fl_simu_supply_itc_min = -2
-    fl_simu_supply_itc_max = 1
-    fl_simu_supply_slp_min = 0.9
-    fl_simu_supply_slp_max = 1.2
-    it_simu_supply_seed = 456
-
-    if it_fixed_group == 101:
-        # Fixed 3 by 3 with default parameters above
-        ar_it_chd_tre = np.array([3, 3])
-        ar_it_occ_lyr = [2]
-    elif it_fixed_group == 102:
-        fl_output_target = 0.12716618330033197
-        ar_it_chd_tre = np.array([4, 2, 5])
-        ar_it_occ_lyr = [2, 3]
-        it_simu_demand_seed = 456280
-        it_simu_supply_seed = 441313
-
-    # 1.a.4. Simulate
-    if it_fixed_group is None or (it_fixed_group >= 1 and it_fixed_group <= 100):
-        # Random output target
-        fl_output_target = np.random.uniform(low=0.1, high=0.3, size=(1,))[0]
-        if it_fixed_group == 1:
-            # Test solve 5 by 5 problem with random params
-            ar_it_chd_tre = np.array([3, 3])
-            ar_it_occ_lyr = [2]
-        elif it_fixed_group == 2:
-            # Three layers testing
-            ar_it_chd_tre = np.array([2, 2, 3])
-            ar_it_occ_lyr = [2]
-        elif it_fixed_group == 3:
-            # Three layers testing
-            ar_it_chd_tre = np.array([2, 3, 2, 10])
-            ar_it_occ_lyr = [2]
-        else:
-            # 2 to 5 CES layers, each
-            ar_it_chd_tre = np.random.randint(
-                2, 10, size=np.random.randint(2, 5, size=1))
-            ar_it_occ_lyr = list(np.sort(np.random.choice(
-                np.arange(len(ar_it_chd_tre)) + 1, size=np.random.randint(1, len(ar_it_chd_tre)), replace=False)))
-        # Simulating random demand share and elasticity parameter seed
-        it_simu_demand_seed = int(np.random.randint(1, 1e6, size=1))
-        # Simulating random supply side "intercept" and "slope" parameters
-        it_simu_supply_seed = int(np.random.randint(1, 1e6, size=1))
-
-    if verbose:
-        pprint.pprint('d-69828 Test Parameters:')
-        print(f'{fl_output_target=}')
-        print(f'{ar_it_chd_tre=}')
-        print(f'{ar_it_occ_lyr=}')
-        print(f'{it_simu_demand_seed=}')
-        print(f'{it_simu_supply_seed=}')
-
-    # 1.a Demand
-    dc_dc_ces_nested = cme_inpt_simu_demand.cme_simu_demand_params_ces_nested(
-        ar_it_chd_tre=ar_it_chd_tre, ar_it_occ_lyr=ar_it_occ_lyr,
-        fl_power_min=fl_simu_demand_power_min,
-        fl_power_max=fl_simu_demand_power_max,
-        it_seed=it_simu_demand_seed,
-        bl_simu_q=False,
-        verbose=False, verbose_debug=False)
-    dc_ces_flat = dc_dc_ces_nested['dc_ces_flat']
-    if verbose:
-        print(f'{cme_inpt_parse.cme_parse_demand_lyrpwr(dc_ces_flat)=}')
-
-    if verbose_debug:
-        pprint.pprint('d-69828 Step 1 dc_ces_flat:')
-        pprint.pprint(dc_ces_flat)
-
-    ar_pwr_across_layers = cme_inpt_parse.cme_parse_demand_lyrpwr(dc_ces_flat)
-    dc_parse_occ_wkr_lst = cme_inpt_parse.cme_parse_occ_wkr_lst(dc_ces_flat)
-    it_worker_types = dc_parse_occ_wkr_lst['it_wkr_cnt']
-    it_occ_types = dc_parse_occ_wkr_lst['it_occ_cnt']
-
-    # 1.b Supply
-    dc_supply_lgt, ar_splv_totl_acrs_i = cme_inpt_simu_supply.cme_simu_supply_params_lgt(
-        it_worker_types=it_worker_types,
-        it_occ_types=it_occ_types,
-        fl_itc_min=fl_simu_supply_itc_min,
-        fl_itc_max=fl_simu_supply_itc_max,
-        fl_slp_min=fl_simu_supply_slp_min,
-        fl_slp_max=fl_simu_supply_slp_max,
-        it_seed=it_simu_supply_seed,
-        verbose=False)
+    # Parsed either simulated or loaded parameters
+    fl_output_target = dc_inpt_gateway['fl_output_target']
+    dc_ces_flat = dc_inpt_gateway['dc_ces_flat']
+    ar_splv_totl_acrs_i = dc_inpt_gateway['ar_splv_totl_acrs_i']
+    dc_supply_lgt = dc_inpt_gateway['dc_supply_lgt']
 
     # Run the iterative nested solution structure
     dc_ces_flat, dc_supply_lgt, \
@@ -133,6 +55,7 @@ def cme_equi_solve_nest_test(
 
     return dc_ces_flat, dc_supply_lgt, \
         dc_equi_solv_sfur, dc_equi_solve_nest_info, dc_supply_lgt, ar_splv_totl_acrs_i
+
 
 def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
                         fl_output_target,
@@ -178,13 +101,13 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
             verbose=verbose_debug)
         fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = \
             cme_equi_solve.cme_equi_solve(
-            dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
-            dc_dmrl_intr_slpe,
-            dc_equi_solve_sone,
-            dc_ces_flat,
-            fl_output_target=fl_output_target,
-            verbose_slve=False,
-            verbose=verbose_debug)
+                dc_sprl_intr_slpe, ar_splv_totl_acrs_i,
+                dc_dmrl_intr_slpe,
+                dc_equi_solve_sone,
+                dc_ces_flat,
+                fl_output_target=fl_output_target,
+                verbose_slve=False,
+                verbose=verbose_debug)
         ls_dc_equi_solv_sfur.append(dc_equi_solv_sfur)
         if (dc_equi_solv_sfur is None):
             failed = True
@@ -313,7 +236,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
 
 if __name__ == "__main__":
     import timeit
-    it_which_test = 2
+    it_which_test = 1
 
     # INVESTIGATE CASE 101
     # Investigate
@@ -342,12 +265,15 @@ if __name__ == "__main__":
                 it_ctr = it_ctr + 1
                 dc_ces_flat, dc_supply_lgt, \
                     dc_equi_solv_sfur, dc_equi_solve_nest_info, dc_supply_lgt, ar_splv_totl_acrs_i = \
-                    cme_equi_solve_nest_test(it_fixed_group=it_fixed_group, verbose=True)
+                    cme_equi_solve_nest_test(
+                        it_fixed_group=it_fixed_group, verbose=True)
                 bl_failed = dc_equi_solve_nest_info['failed']
                 it_failed_flag = dc_equi_solve_nest_info['failed_flag']
                 if bl_failed:
                     it_failed_counter = it_failed_counter + 1
                 if it_failed_flag == 1:
                     it_failed_flag1 = it_failed_flag1 + 1
-                    print(f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_ctr=:.0F} ({it_fixed_group=})')
-            print(f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_2by2_test_cnt=:.0F} ({it_fixed_group=})')
+                    print(
+                        f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_ctr=:.0F} ({it_fixed_group=})')
+            print(
+                f'{it_failed_counter=:.0F} and {it_failed_flag1=:.0F} out of {it_2by2_test_cnt=:.0F} ({it_fixed_group=})')

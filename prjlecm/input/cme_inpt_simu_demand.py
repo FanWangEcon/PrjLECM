@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pprint
-
+import ast
 
 def cme_simu_demand_ces_inner_dict(
         it_lyr=None, it_prt=None,
@@ -22,7 +22,17 @@ def cme_simu_demand_ces_inner_dict(
     # drv = derivative
     # drc = cumulative-derivative
 
-    return {
+    dc_type_return = {
+        'lyr': int, 'prt': int,
+        'wkr': int, 'occ': int,
+        'shr': float,  'pwr': float,
+        'ipt': ast.literal_eval,
+        'qty': float, 'wge': float,
+        'drv': float, 'drc': float,
+        'shc': float, 'sni': float
+    }
+    
+    dc_val_return = {
         'lyr': it_lyr, 'prt': it_prt,
         'wkr': it_wkr, 'occ': it_occ,
         'shr': fl_shr,  'pwr': fl_pwr,
@@ -31,6 +41,8 @@ def cme_simu_demand_ces_inner_dict(
         'drv': fl_drv, 'drc': fl_drc,
         'shc': fl_sch, 'sni': fl_sni
     }
+
+    return dc_val_return, dc_type_return
 
 
 def cme_simu_demand_mnest_wkr_occ_keys(ar_it_chd_tre=[2, 2, 2, 2], ar_it_occ_lyr=[2, 3], verbose=False):
@@ -155,7 +167,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
                 fl_wge = mt_rand_p[it_worker_type_ctr, it_occ_type_ctr]
 
 
-            dc_cur_input = cme_simu_demand_ces_inner_dict(
+            dc_cur_input, _ = cme_simu_demand_ces_inner_dict(
                 it_lyr=1, it_prt=0,
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
                 fl_shr=mt_rand_coef_shares[it_worker_type_ctr, it_occ_type_ctr],
@@ -166,7 +178,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
             ar_it_inputs = np.append(ar_it_inputs, it_input_key_ctr)
 
     # Aggregation layer
-    dc_ces[0] = cme_simu_demand_ces_inner_dict(
+    dc_ces[0], _ = cme_simu_demand_ces_inner_dict(
         it_lyr=0, fl_pwr=fl_power,
         ar_it_ipt=ar_it_inputs)
 
@@ -352,7 +364,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
             # these fl_shr sum to 1 within nest
             fl_shr = ar_rand_coef_shares_children[it_chd_ctr]
-            dc_ces_flat[it_child] = cme_simu_demand_ces_inner_dict(
+            dc_ces_flat[it_child], _ = cme_simu_demand_ces_inner_dict(
                 it_lyr=it_layer_cnt, it_prt=it_parent,
                 it_wkr=it_wkr_idx, it_occ=it_occ_idx,
                 fl_pwr=fl_power, fl_shr=fl_shr,
@@ -416,7 +428,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
                 fl_shr = ar_rand_coef_shares_children[it_cur_chd]
                 ar_it_ipt = [key for key, nest in dc_ces_flat.items()
                              if nest['prt'] == it_within_cnt]
-                dc_ces_flat[it_within_cnt] = cme_simu_demand_ces_inner_dict(
+                dc_ces_flat[it_within_cnt], _ = cme_simu_demand_ces_inner_dict(
                     it_lyr=it_lyr, it_prt=it_parent,
                     fl_pwr=fl_power, fl_shr=fl_shr,
                     ar_it_ipt=ar_it_ipt)
@@ -438,7 +450,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     fl_shr = None
     ar_it_ipt = [key for key, nest in dc_ces_flat.items()
                  if nest['prt'] == it_top_key_index]
-    dc_ces_flat[it_top_key_index] = cme_simu_demand_ces_inner_dict(
+    dc_ces_flat[it_top_key_index], _ = cme_simu_demand_ces_inner_dict(
         it_lyr=it_lyr, it_prt=it_parent,
         fl_pwr=fl_power, fl_shr=fl_shr,
         ar_it_ipt=ar_it_ipt)

@@ -43,7 +43,47 @@ def cme_parse_occ_wkr_lst(dc_dm_or_sp, ls_it_idx=None, verbose=False):
 
     return dc_parse_occ_wkr_lst
 
+def cme_parse_supply_qtp(dc_supply_lgt, verbose=False):
+    """Get potential labor array from supply dictionary
 
+    The same potential labor level appears for each occ of the 
+    the wkr. Create an array of potential worker levels, length
+    equal to the number of worker types, indexed by it_wkr.
+    
+    Parameters
+    ----------
+    dc_supply_lgt : _type_
+        _description_
+    verbose : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+    # 1. Get worker index list
+    dc_parse_occ_wrk_lst = cme_parse_occ_wkr_lst(dc_supply_lgt, ls_it_idx=None)
+    ls_it_wkr = dc_parse_occ_wrk_lst['ls_it_wkr']
+    ls_it_idx = dc_parse_occ_wrk_lst['ls_it_idx']
+    it_wkr_cnt = dc_parse_occ_wrk_lst['it_wkr_cnt']
+
+    # 2. Fill out supply available vector
+    ar_splv_totl_acrs_i = np.random.rand(it_wkr_cnt) 
+    for it_wkr in ls_it_wkr:
+        ls_fl_qtp = [dc_supply_lgt[it_idx]['qtp']
+                    for it_idx in ls_it_idx
+                    if dc_supply_lgt[it_idx]['wkr'] == it_wkr]
+        fl_qtp = list(set(ls_fl_qtp))[0]
+        ar_splv_totl_acrs_i[it_wkr] = fl_qtp
+
+    if verbose:
+            print(f'd-186126 {ar_splv_totl_acrs_i=}')
+
+    return ar_splv_totl_acrs_i
+
+
+        
 def cme_parse_demand_lyrpwr(dc_ces_flat, bl_chk_homoinlayer=False):
     """Get the pwr value from each layer
 

@@ -7,18 +7,35 @@
 import pprint
 import pandas as pd
 
+import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
+import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
+
 def cme_dictkey_pdvarname():
     return "key_node"
 
-def cme_convert_pd2dc(df_demand_or_supply, verbose=False):
+def cme_convert_pd2dc(df_demand_or_supply, input_type='demand', verbose=False):
 
     # 1. move key_node column to index   
     st_key_var_name = cme_dictkey_pdvarname()
-    df_from_nested = df_from_nested.set_index(st_key_var_name)
+    df_from_nested = df_demand_or_supply.set_index(st_key_var_name)
 
     # 2. Convert to dictionary
     dc_from_df = df_from_nested.to_dict(orient="index")
-    
+
+    # 3. Value types conversion 
+    if input_type == "demand":
+        __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
+    elif input_type == "supply":
+        __ , dc_type_return = cme_inpt_simu_supply.cme_simu_supply_lgt_dict()
+
+    # Int should be int, list should be list, etc.
+    for it_key, dc_val in dc_from_df.items():
+        for st_key, cell_val in dc_val.items():
+            if cell_val is None or pd.isna(cell_val):
+                dc_from_df[it_key][st_key] = None
+            else:
+                dc_from_df[it_key][st_key] = dc_type_return[st_key](cell_val)
+
     # print
     if verbose:
         print('d-129941 dc_from_df:')

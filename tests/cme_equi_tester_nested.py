@@ -23,7 +23,7 @@ start = timeit.default_timer()
 dc_ces_flat, dc_supply_lgt, \
     dc_equi_solv_sfur, dc_equi_solve_nest_info, \
     dc_supply_lgt, ar_splv_totl_acrs_i = \
-    cme_equi_solve_nest.cme_equi_solve_nest_test(it_fixed_group=3, verbose=True)
+    cme_equi_solve_nest.cme_equi_solve_nest_test(it_fixed_group=11, verbose=True)
 stop = timeit.default_timer()
 print('Time: ', stop - start)
 # Get equilibium quantities and prices as matrixes
