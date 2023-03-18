@@ -1,4 +1,3 @@
-import copy
 import pprint
 
 import numpy as np
@@ -9,8 +8,6 @@ import prjlecm.equi.cme_equi_solve as cme_equi_solve
 import prjlecm.equi.cme_equi_solve_gen_inputs as cme_equi_solve_gen_inputs
 import prjlecm.input.cme_inpt_gateway as cme_inpt_gateway
 import prjlecm.input.cme_inpt_parse as cme_inpt_parse
-import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
-import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
 
 
 def cme_equi_solve_nest_test(
@@ -23,7 +20,7 @@ def cme_equi_solve_nest_test(
     bl_simu_params_of_simu : bool, optional
         If True, will use default parameters, if False, randomly draw parameters, by default False
     """
-    
+
     # Generate random or fixed parameters
     if dc_load_path is None:
         dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_simu(
@@ -31,11 +28,11 @@ def cme_equi_solve_nest_test(
             verbose=verbose, verbose_debug=verbose_debug)
     else:
         dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_load(
-            spt_path_demand = dc_load_path['spt_path_demand'],
-            snm_file_demand = dc_load_path['snm_file_demand'],
-            spt_path_supply = dc_load_path['spt_path_supply'],
-            snm_file_supply = dc_load_path['snm_file_supply'],
-            verbose = verbose)
+            spt_path_demand=dc_load_path['spt_path_demand'],
+            snm_file_demand=dc_load_path['snm_file_demand'],
+            spt_path_supply=dc_load_path['spt_path_supply'],
+            snm_file_supply=dc_load_path['snm_file_supply'],
+            verbose=verbose)
 
     # Parsed either simulated or loaded parameters
     fl_output_target = dc_inpt_gateway['fl_output_target']
@@ -236,6 +233,7 @@ def cme_equi_solve_nest(dc_ces_flat, dc_supply_lgt, ar_splv_totl_acrs_i,
 
 if __name__ == "__main__":
     import timeit
+
     it_which_test = 1
 
     # INVESTIGATE CASE 101

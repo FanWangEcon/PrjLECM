@@ -5,7 +5,6 @@
 # Solve equilibrium problem given parameters stored in panda dataframes (from CSV), convert to DICT
 # Check solutions are the same as started with.
 
-import time
 import timeit
 from pathlib import Path
 
@@ -64,8 +63,8 @@ if verbose:
 # The pandas dataframes would be the input structures for estimation to obtain underlying parameters
 # The pandas dataframes are also provide the table format to store estimates parameters to simulate
 # equilibrium results
-tb_supply_lgt = cme_inpt_convert.cme_convert_dc2pd(dc_supply_lgt)
-tb_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat)
+tb_supply_lgt = cme_inpt_convert.cme_convert_dc2pd(dc_supply_lgt, input_type="supply")
+tb_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat, input_type="demand")
 if verbose:
     pd.pandas.set_option('display.max_columns', None)
     print(f'{tb_supply_lgt=}')
@@ -83,7 +82,7 @@ if bl_pandas_out:
     snm_file_demand = 'tb_ces_flat-test-c-2-6-out.csv'
     spn_csv_path = Path.joinpath(spt_data, snm_file_demand)
     tb_ces_flat.to_csv(spn_csv_path, sep=",", index=False)
-    print(f'{spn_csv_path=}')    
+    print(f'{spn_csv_path=}')
     snm_file_supply = 'tb_supply_lgt-test-c-2-6-out.csv'
     spn_csv_path = Path.joinpath(spt_data, snm_file_supply)
     tb_supply_lgt.to_csv(spn_csv_path, sep=",", index=False)

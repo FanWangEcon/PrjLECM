@@ -58,8 +58,8 @@ if verbose:
 # The pandas dataframes would be the input structures for estimation to obtain underlying parameters
 # The pandas dataframes are also provide the table format to store estimates parameters to simulate
 # equilibrium results
-tb_supply_lgt = cme_inpt_convert.cme_convert_dc2pd(dc_supply_lgt)
-tb_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat)
+tb_supply_lgt = cme_inpt_convert.cme_convert_dc2pd(dc_supply_lgt, input_type="supply")
+tb_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat, input_type="demand")
 if verbose:
     pd.pandas.set_option('display.max_columns', None)
     print(f'{tb_supply_lgt=}')

@@ -31,7 +31,9 @@ def cme_convert_pd2dc(df_demand_or_supply, input_type='demand', verbose=False):
     # Int should be int, list should be list, etc.
     for it_key, dc_val in dc_from_df.items():
         for st_key, cell_val in dc_val.items():
-            if cell_val is None or pd.isna(cell_val):
+            if cell_val is None or \
+                    pd.isna(cell_val) or \
+                    str(cell_val).strip() == "":
                 dc_from_df[it_key][st_key] = None
             else:
                 dc_from_df[it_key][st_key] = dc_type_return[st_key](cell_val)
@@ -44,7 +46,7 @@ def cme_convert_pd2dc(df_demand_or_supply, input_type='demand', verbose=False):
     return dc_from_df
 
 
-def cme_convert_dc2pd(dc_demand_or_supply, verbose=False):
+def cme_convert_dc2pd(dc_demand_or_supply, input_type='demand', verbose=False):
 
     # 1. convert to dataframe
     st_key_var_name = cme_dictkey_pdvarname()
@@ -53,6 +55,17 @@ def cme_convert_dc2pd(dc_demand_or_supply, verbose=False):
     # 2. keys from top nest as variable and rename as key_node
     df_from_dc = df_from_dc.reset_index()
     df_from_dc.rename(columns={'index':st_key_var_name}, inplace=True)
+
+    # 3. Value types conversion
+    # Convert int columns to int
+    if input_type == "demand":
+        __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
+    elif input_type == "supply":
+        __ , dc_type_return = cme_inpt_simu_supply.cme_simu_supply_lgt_dict()
+    for st_col, fc_datatype in dc_type_return.items():
+        if (fc_datatype is int) and (st_col in df_from_dc.columns):
+            # df_from_dc = df_from_dc.astype({st_col: 'int'})
+            df_from_dc[st_col] = df_from_dc[st_col].astype(float).astype('Int64')
 
     # Print
     if verbose:

@@ -1,7 +1,9 @@
+import ast
+import pprint
+
 import numpy as np
 import pandas as pd
-import pprint
-import ast
+
 
 def cme_simu_demand_ces_inner_dict(
         it_lyr=None, it_prt=None,
@@ -11,7 +13,6 @@ def cme_simu_demand_ces_inner_dict(
         fl_qty=None, fl_wge=None,
         fl_drv=None, fl_drc=None,
         fl_sch=None, fl_sni=None):
-
     # if (it_wkr is not None):
     #     it_wkr = it_wkr + 100
     # if (it_occ is not None):
@@ -25,17 +26,17 @@ def cme_simu_demand_ces_inner_dict(
     dc_type_return = {
         'lyr': int, 'prt': int,
         'wkr': int, 'occ': int,
-        'shr': float,  'pwr': float,
+        'shr': float, 'pwr': float,
         'ipt': ast.literal_eval,
         'qty': float, 'wge': float,
         'drv': float, 'drc': float,
         'shc': float, 'sni': float
     }
-    
+
     dc_val_return = {
         'lyr': it_lyr, 'prt': it_prt,
         'wkr': it_wkr, 'occ': it_occ,
-        'shr': fl_shr,  'pwr': fl_pwr,
+        'shr': fl_shr, 'pwr': fl_pwr,
         'ipt': ar_it_ipt,
         'qty': fl_qty, 'wge': fl_wge,
         'drv': fl_drv, 'drc': fl_drc,
@@ -132,6 +133,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
                                       fl_power_min=0.1,
                                       fl_power_max=0.8,
                                       bl_simu_q=False, bl_simu_p=False,
+                                      bl_simu_params=True,
                                       it_seed=123,
                                       verbose=True, tp_fl_share_rescalar=1):
     # it_worker_types = 2
@@ -139,18 +141,27 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
     # fl_power_min = 0.1
     # fl_power_max = 0.8
     # it_seed = 123
-    np.random.seed(it_seed)
-    mt_rand_coef_shares = np.random.rand(it_worker_types, it_occ_types)
-    # DEBUG: Was not sure if sum of share < 1 works, it does, note have to adjust lower total output since TFP is
-    # lower, but the optimal demand function solution will generate different results due to differeing TFP.
-    # mt_rand_coef_shares = (mt_rand_coef_shares/np.sum(mt_rand_coef_shares))/tp_fl_share_rescalar
-    mt_rand_coef_shares = (mt_rand_coef_shares / np.sum(mt_rand_coef_shares))
+
     if bl_simu_q:
         mt_rand_q = np.random.rand(it_worker_types, it_occ_types)
     if bl_simu_p:
         mt_rand_p = np.random.rand(it_worker_types, it_occ_types)
-    fl_power = (np.random.uniform(
-        low=fl_power_min, high=fl_power_max, size=(1,))).item()
+
+    # Simulate parameters
+    if bl_simu_params:
+        np.random.seed(it_seed)
+        mt_rand_coef_shares = np.random.rand(it_worker_types, it_occ_types)
+        # DEBUG: Was not sure if sum of share < 1 works, it does, note have to adjust lower total output since TFP is
+        # lower, but the optimal demand function solution will generate different results due to differeing TFP.
+        # mt_rand_coef_shares = (mt_rand_coef_shares/np.sum(mt_rand_coef_shares))/tp_fl_share_rescalar
+        mt_rand_coef_shares = (mt_rand_coef_shares / np.sum(mt_rand_coef_shares))
+        fl_power = (np.random.uniform(
+            low=fl_power_min, high=fl_power_max, size=(1,))).item()
+    else:
+        mt_rand_coef_shares = np.reshape(
+            [None] * (it_worker_types * it_occ_types),
+            [it_worker_types, it_occ_types])
+        fl_power = None
 
     # Each input
     dc_ces = {}
@@ -166,11 +177,11 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
             if bl_simu_p:
                 fl_wge = mt_rand_p[it_worker_type_ctr, it_occ_type_ctr]
 
-
             dc_cur_input, _ = cme_simu_demand_ces_inner_dict(
                 it_lyr=1, it_prt=0,
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
-                fl_shr=mt_rand_coef_shares[it_worker_type_ctr, it_occ_type_ctr],
+                fl_shr=mt_rand_coef_shares[it_worker_type_ctr,
+                it_occ_type_ctr],
                 fl_qty=fl_qty, fl_wge=fl_wge)
 
             it_input_key_ctr = it_input_key_ctr + 1
@@ -194,6 +205,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
                                       fl_power_min=0.1,
                                       fl_power_max=0.8,
                                       bl_simu_q=False, bl_simu_p=False,
+                                      bl_simu_params=True,
                                       it_seed=123,
                                       verbose=False, verbose_debug=False):
     """Simulated nested-ces tree and flattened dict
@@ -266,6 +278,10 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
         Whether to generate random quantities at the bottom layer, by default False.
     bl_simu_p : boolean, optional
         Whether to generate random prices at the bottom layer, by default False.
+    bl_simu_params: boolean, optional
+        All demand-side parameters are set to None, not randomly drawn. This is to generate skeleton frame
+        to be merged with actual estimates/data from the model, not testing random parameters. Keeping all
+        None values assures that parameters from merged table are not based on random draws.
     it_seed : int, optional
         Random seed for drawing parameters, by default 123
     verbose : bool, optional
@@ -305,28 +321,35 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     # this
     for it_layer_ctr_rev in np.arange(it_layer_cnt):
         it_tre_up_cnt = np.prod(
-            np.array(ar_it_chd_tre[0:(it_layer_cnt-it_layer_ctr_rev)]))
+            np.array(ar_it_chd_tre[0:(it_layer_cnt - it_layer_ctr_rev)]))
         ar_it_tre_up_cnt[it_layer_ctr_rev] = it_tre_up_cnt
     if verbose_debug:
         print(f'{ar_it_tre_up_cnt=}')
 
-    np.random.seed(it_seed)
-    ar_rand_coef_shares = np.random.rand(np.sum(ar_it_tre_up_cnt))
+    # Simulate data Q and P
     if bl_simu_q:
         ar_rand_q = np.random.rand(ar_it_tre_up_cnt[0])
     if bl_simu_p:
         ar_rand_p = np.random.rand(ar_it_tre_up_cnt[0])
-    ar_power = np.random.uniform(
-        low=fl_power_min, high=fl_power_max, size=(it_layer_cnt,))
+
+    # Simulate parameters
+    if bl_simu_params:
+        np.random.seed(it_seed)
+        ar_rand_coef_shares = np.random.rand(np.sum(ar_it_tre_up_cnt))
+        ar_power = np.random.uniform(
+            low=fl_power_min, high=fl_power_max, size=(it_layer_cnt,))
+    else:
+        ar_rand_coef_shares = np.array([None] * np.sum(ar_it_tre_up_cnt))
+        ar_power = np.array([None] * it_layer_cnt)
 
     # Handling bottom layer trees
     it_leaf_nodes = ar_it_chd_tre[-1]
-    ls_it_leaf_nodes = list(range(1, (it_leaf_nodes+1)))
+    ls_it_leaf_nodes = list(range(1, (it_leaf_nodes + 1)))
     it_tre_up_cnt = np.prod(np.array(ar_it_chd_tre[0:-1]))
-    it_lower_count = it_tre_up_cnt * it_leaf_nodes+1
+    it_lower_count = it_tre_up_cnt * it_leaf_nodes + 1
     # Construct bottom most dictionary, flat, to be reorganized later.
     dc_ces_keys_tree = dict([(it_tre_ctr + it_lower_count,
-                              list(ls_it_leaf_nodes + (it_tre_ctr)*it_leaf_nodes))
+                              list(ls_it_leaf_nodes + (it_tre_ctr) * it_leaf_nodes))
                              for it_tre_ctr in np.arange(it_tre_up_cnt)])
 
     # Storage
@@ -337,26 +360,30 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
             print(f'{it_parent=} and {ar_it_children=}')
 
         # sum shares within-nest to be equal to 1
-        ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
-        ar_rand_coef_shares_children = ar_rand_coef_shares_children / \
-            np.sum(ar_rand_coef_shares_children)
+        if bl_simu_params:
+            ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
+            ar_rand_coef_shares_children = ar_rand_coef_shares_children / \
+                                           np.sum(ar_rand_coef_shares_children)
+        else:
+            # All None Values
+            ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
 
         # loop over the list of bottom children
         for it_chd_ctr, it_child in enumerate(ar_it_children):
             # Possibly generating random quantities
             if bl_simu_p:
-                fl_wge = ar_rand_p[it_child-1]
+                fl_wge = ar_rand_p[it_child - 1]
             else:
                 fl_wge = None
 
             if bl_simu_q:
-                fl_qty = ar_rand_q[it_child-1]
+                fl_qty = ar_rand_q[it_child - 1]
             else:
                 fl_qty = None
 
             # occ and wkr index pre-calculated
-            it_occ_idx = ls_it_occ_idx[it_child-1]
-            it_wkr_idx = ls_it_wkr_idx[it_child-1]
+            it_occ_idx = ls_it_occ_idx[it_child - 1]
+            it_wkr_idx = ls_it_wkr_idx[it_child - 1]
 
             # bottom most layer, no power coefficient.
             fl_power = None
@@ -396,7 +423,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
         dc_update = {}
         for it_branch_ctr in np.arange(it_tre_up_cnt):
-            it_dc_update_ctr = it_branch_ctr+it_lower_count
+            it_dc_update_ctr = it_branch_ctr + it_lower_count
 
             dc_nest = {}
             if verbose_debug:
@@ -404,14 +431,17 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
             # Created multi-layer nested dictionary
             it_within_cnt = it_lower_count - it_tre_up_cnt_last - \
-                1 + it_branch_ctr*it_brh_chd_layer_rev
+                            1 + it_branch_ctr * it_brh_chd_layer_rev
 
             # Single layer nested CES
             ar_it_children = np.arange(
                 it_within_cnt, it_within_cnt + it_brh_chd_layer_rev)
-            ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
-            ar_rand_coef_shares_children = ar_rand_coef_shares_children / \
-                np.sum(ar_rand_coef_shares_children)
+            if bl_simu_params:
+                ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
+                ar_rand_coef_shares_children = ar_rand_coef_shares_children / \
+                                               np.sum(ar_rand_coef_shares_children)
+            else:
+                ar_rand_coef_shares_children = ar_rand_coef_shares[ar_it_children]
 
             for it_cur_chd in np.arange(it_brh_chd_layer_rev):
                 it_within_cnt = it_within_cnt + 1
@@ -440,7 +470,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
         # it_lower_count_last = it_lower_count
         # it_lower_count = it_lower_count + it_tre_cnt
-    dc_ces_keys_tree = dc_ces_keys_tree[it_lower_count-1]
+    dc_ces_keys_tree = dc_ces_keys_tree[it_lower_count - 1]
 
     # top layer of CES
     it_top_key_index = it_lower_count - 1
@@ -469,7 +499,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
 # Test
 if __name__ == "__main__":
-
+    # All filled data/params
     dc_ces_flat = cme_simu_demand_params_ces_single(
         it_worker_types=2,
         it_occ_types=2,
@@ -478,6 +508,14 @@ if __name__ == "__main__":
         it_seed=123,
         verbose=True)
 
+    # All None
+    dc_ces_flat = cme_simu_demand_params_ces_single(
+        it_worker_types=2,
+        it_occ_types=2,
+        bl_simu_params=False,
+        verbose=True)
+
+    # All filled data/params, simulated parameters and quantity and wages
     dc_dc_ces_nested = cme_simu_demand_params_ces_nested(
         ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[2],
         fl_power_min=0.1,
@@ -485,4 +523,13 @@ if __name__ == "__main__":
         it_seed=123,
         bl_simu_q=True,
         bl_simu_p=True,
+        verbose=True, verbose_debug=True)
+
+    # All None, generate skeleton to be filled with estimates
+    # results or data.
+    dc_dc_ces_nested = cme_simu_demand_params_ces_nested(
+        ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[2],
+        bl_simu_q=False,
+        bl_simu_p=False,
+        bl_simu_params=False,
         verbose=True, verbose_debug=True)
