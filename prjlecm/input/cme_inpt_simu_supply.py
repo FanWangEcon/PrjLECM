@@ -88,8 +88,8 @@ def cme_simu_supply_params_lgt(it_worker_types=2,
     dc_lgt = {}
     # Start at 0 so that demand and supply keys are identical
     it_input_key_ctr = 0
-    for it_worker_type_ctr in np.arange(it_worker_types):
-        for it_occ_type_ctr in np.arange(it_occ_types):
+    for it_occ_type_ctr in np.arange(it_occ_types):
+        for it_worker_type_ctr in np.arange(it_worker_types):
             dc_cur_input, _ = cme_simu_supply_lgt_dict(
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
                 fl_itc=mt_rand_coef_intcpt[it_worker_type_ctr, it_occ_type_ctr],

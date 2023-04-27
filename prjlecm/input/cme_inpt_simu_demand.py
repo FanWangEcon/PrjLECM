@@ -66,11 +66,18 @@ def cme_simu_demand_mnest_wkr_occ_keys(ar_it_chd_tre=[2, 2, 2, 2], ar_it_occ_lyr
     verbose : bool, optional
         print details, by default False        
     """
+
     # ls_chd_uqe_idx_all : list of child unique index all
     ls_chd_uqe_idx_all = [np.arange(it_chd_tre)
                           for it_chd_tre in ar_it_chd_tre]
     mt_occ_wkr_mesh = np.array(np.meshgrid(
         *ls_chd_uqe_idx_all)).T.reshape(-1, len(ar_it_chd_tre))
+
+    # Resort columns, from last to first, jointly
+    ls_all_cols_last2first = [
+        mt_occ_wkr_mesh[:,it_col_ctr]
+        for it_col_ctr in reversed(np.arange(0, len(ar_it_chd_tre)))]
+    mt_occ_wkr_mesh = mt_occ_wkr_mesh[np.lexsort(ls_all_cols_last2first)]
 
     # which columns to select
     ar_it_col_sel_occ = np.array(ar_it_occ_lyr) - 1
@@ -82,9 +89,9 @@ def cme_simu_demand_mnest_wkr_occ_keys(ar_it_chd_tre=[2, 2, 2, 2], ar_it_occ_lyr
 
     # Generate string concated multi-column names
     pd_occ_wkr_mesh['occ_str'] = pd_occ_wkr_mesh[ar_it_col_sel_occ].apply(
-        ''.join, axis=1)
+        '_'.join, axis=1)
     pd_occ_wkr_mesh['wkr_str'] = pd_occ_wkr_mesh[ar_it_col_sel_wkr].apply(
-        ''.join, axis=1)
+        '_'.join, axis=1)
 
     # Generate unique ascending index keys
     ls_occ_concat_str = list(pd_occ_wkr_mesh['occ_str'])
@@ -528,8 +535,21 @@ if __name__ == "__main__":
     # All None, generate skeleton to be filled with estimates
     # results or data.
     dc_dc_ces_nested = cme_simu_demand_params_ces_nested(
-        ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[2],
+        ar_it_chd_tre=[2,3,4], ar_it_occ_lyr=[1],
         bl_simu_q=False,
         bl_simu_p=False,
         bl_simu_params=False,
         verbose=True, verbose_debug=True)
+
+    pd.pandas.set_option('display.max_rows', None)
+    pd.pandas.set_option('display.max_columns', None)
+    print(dc_dc_ces_nested['pd_occ_wkr_mesh'])
+
+    import prjlecm.input.cme_inpt_convert as cme_inpt_convert
+
+    dc_ces_flat = dc_dc_ces_nested['dc_ces_flat']
+    pd_ces_flat = cme_inpt_convert.cme_convert_dc2pd(dc_ces_flat)
+    print(pd_ces_flat)
+
+    pd.pandas.set_option('display.max_rows', 10)
+    pd.pandas.set_option('display.max_columns', 10)

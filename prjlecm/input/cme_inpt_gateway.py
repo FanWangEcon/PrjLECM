@@ -225,8 +225,7 @@ def cme_inpt_gateway_gen_dicts(
         fl_slp_min=0.4, fl_slp_max=0.6,
         it_simu_supply_seed=456,
         bl_simu_params=True,
-        verbose=False, verbose_debug=False,
-):
+        verbose=False, verbose_debug=False):
     """Generates demand and supply dictionaries
 
     Generate parameters based on simulated/drawn values, or to generate a

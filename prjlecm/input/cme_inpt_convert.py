@@ -31,12 +31,15 @@ def cme_convert_pd2dc(df_demand_or_supply, input_type='demand', verbose=False):
     # Int should be int, list should be list, etc.
     for it_key, dc_val in dc_from_df.items():
         for st_key, cell_val in dc_val.items():
-            if cell_val is None or \
-                    pd.isna(cell_val) or \
-                    str(cell_val).strip() == "":
-                dc_from_df[it_key][st_key] = None
+            if (st_key == "ipt") and (type(cell_val) == list):
+                pass
             else:
-                dc_from_df[it_key][st_key] = dc_type_return[st_key](cell_val)
+                if cell_val is None or \
+                        pd.isna(cell_val) or \
+                        str(cell_val).strip() == "":
+                    dc_from_df[it_key][st_key] = None
+                else:
+                    dc_from_df[it_key][st_key] = dc_type_return[st_key](cell_val)
 
     # print
     if verbose:

@@ -12,6 +12,7 @@ import prjlecm.input.cme_inpt_parse as cme_inpt_parse
 
 def cme_equi_solve_nest_test(
         dc_load_path=None,
+        dc_inpt_gateway=None,
         it_fixed_group=0, verbose=False, verbose_debug=False):
     """Testing Structure
 
@@ -22,19 +23,20 @@ def cme_equi_solve_nest_test(
     """
 
     # Generate random or fixed parameters
-    if dc_load_path is None:
-        dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_simu(
-            it_fixed_group=it_fixed_group,
-            verbose=verbose, verbose_debug=verbose_debug)
-    else:
-        dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_load(
-            spt_path_demand=dc_load_path['spt_path_demand'],
-            snm_file_demand=dc_load_path['snm_file_demand'],
-            spt_path_supply=dc_load_path['spt_path_supply'],
-            snm_file_supply=dc_load_path['snm_file_supply'],
-            verbose=verbose)
+    if dc_inpt_gateway is None:
+        if dc_load_path is None:
+            dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_simu(
+                it_fixed_group=it_fixed_group,
+                verbose=verbose, verbose_debug=verbose_debug)
+        else:
+            dc_inpt_gateway = cme_inpt_gateway.cme_inpt_gateway_load(
+                spt_path_demand=dc_load_path['spt_path_demand'],
+                snm_file_demand=dc_load_path['snm_file_demand'],
+                spt_path_supply=dc_load_path['spt_path_supply'],
+                snm_file_supply=dc_load_path['snm_file_supply'],
+                verbose=verbose)
 
-    # Parsed either simulated or loaded parameters
+    # Parsed either simulated or loaded parameters, or externally provided
     fl_output_target = dc_inpt_gateway['fl_output_target']
     dc_ces_flat = dc_inpt_gateway['dc_ces_flat']
     ar_splv_totl_acrs_i = dc_inpt_gateway['ar_splv_totl_acrs_i']
