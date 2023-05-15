@@ -24,7 +24,7 @@ def cme_convert_pd2dc(df_demand_or_supply, input_type='demand', verbose=False):
 
     # 3. Value types conversion 
     if input_type == "demand":
-        __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
+        __, __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
     elif input_type == "supply":
         __ , dc_type_return = cme_inpt_simu_supply.cme_simu_supply_lgt_dict()
 
@@ -62,7 +62,7 @@ def cme_convert_dc2pd(dc_demand_or_supply, input_type='demand', verbose=False):
     # 3. Value types conversion
     # Convert int columns to int
     if input_type == "demand":
-        __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
+        __, __ , dc_type_return = cme_inpt_simu_demand.cme_simu_demand_ces_inner_dict()
     elif input_type == "supply":
         __ , dc_type_return = cme_inpt_simu_supply.cme_simu_supply_lgt_dict()
     for st_col, fc_datatype in dc_type_return.items():

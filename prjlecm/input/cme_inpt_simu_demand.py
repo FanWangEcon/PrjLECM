@@ -1,3 +1,10 @@
+"""Generate Nested-CES Demand-side Dict with Random Parameters
+The :mod:`prjlecm.input.cme_inpt_simu_demand` generated a nested dictionary storing all CES structure
+and parameters. Parameters are drawn randomly. This is for parameters and structure within a single year
+
+Includes method :func:`cme_simu_demand_ces_inner_dict`, :func:`cme_simu_demand_mnest_wkr_occ_keys`, 
+:func:`cme_simu_demand_params_ces_single`, and :func:`cme_simu_demand_params_ces_nested`.
+"""
 import ast
 import pprint
 
@@ -8,6 +15,7 @@ import pandas as pd
 def cme_simu_demand_ces_inner_dict(
         it_lyr=None, it_prt=None,
         it_wkr=None, it_occ=None,
+        it_nvi=None, gn_nvl=None, st_nvr=None, st_nlb=None,
         fl_shr=None, fl_pwr=None,
         ar_it_ipt=None,
         fl_qty=None, fl_wge=None,
@@ -23,9 +31,38 @@ def cme_simu_demand_ces_inner_dict(
     # drv = derivative
     # drc = cumulative-derivative
 
+    # nvi = node value index, value, integer index, always an index, categorical dummies nvl is a value for parent nest category, 
+    #           actually, always integer
+    #           nvl is categorical integer, to be matched with some other key file. NVL is not the same as
+    #           node_key which is unique for each node through the tree. NVL is categorical label that repeats.
+    #           these labels are integers starting at 1.
+
+    st_layer = "lyr"
+    st_node_value_index = "nvi"
+    st_node_value = "nvl"
+    # variable string, occupation/gender
+    st_node_var = "nvr"
+    # label string, analytical, routine, manual or male vs female 
+    st_node_lab = "nlb"
+
+    # dc_key_return allows for consistent naming of these supply dictionary keys
+    # "nvi" is the key for the key string used for node value index. So if we 
+    # want to change the key for node value index, we would change the line above:
+    #     st_node_value_index = "nvi"
+    # but "nvi" key in the dc_key_return is immutable.
+    dc_key_return = {
+        "lyr": st_layer,
+        "nvi": st_node_value_index,
+        "nvl": st_node_value,
+        "nvr": st_node_var,
+        "nlb": st_node_lab
+    }
+
     dc_type_return = {
-        'lyr': int, 'prt': int,
+        st_layer: int, 'prt': int,
         'wkr': int, 'occ': int,
+        st_node_value_index: int, st_node_value: ast.literal_eval,
+        st_node_var: str, st_node_lab: str,
         'shr': float, 'pwr': float,
         'ipt': ast.literal_eval,
         'qty': float, 'wge': float,
@@ -34,8 +71,10 @@ def cme_simu_demand_ces_inner_dict(
     }
 
     dc_val_return = {
-        'lyr': it_lyr, 'prt': it_prt,
+        st_layer: it_lyr, 'prt': it_prt,
         'wkr': it_wkr, 'occ': it_occ,
+        st_node_value_index: it_nvi, st_node_value: gn_nvl,
+        st_node_var: st_nvr, st_node_lab: st_nlb,
         'shr': fl_shr, 'pwr': fl_pwr,
         'ipt': ar_it_ipt,
         'qty': fl_qty, 'wge': fl_wge,
@@ -43,7 +82,7 @@ def cme_simu_demand_ces_inner_dict(
         'shc': fl_sch, 'sni': fl_sni
     }
 
-    return dc_val_return, dc_type_return
+    return dc_key_return, dc_val_return, dc_type_return
 
 
 def cme_simu_demand_mnest_wkr_occ_keys(ar_it_chd_tre=[2, 2, 2, 2], ar_it_occ_lyr=[2, 3], verbose=False):
@@ -184,7 +223,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
             if bl_simu_p:
                 fl_wge = mt_rand_p[it_worker_type_ctr, it_occ_type_ctr]
 
-            dc_cur_input, _ = cme_simu_demand_ces_inner_dict(
+            _, dc_cur_input, _ = cme_simu_demand_ces_inner_dict(
                 it_lyr=1, it_prt=0,
                 it_wkr=it_worker_type_ctr, it_occ=it_occ_type_ctr,
                 fl_shr=mt_rand_coef_shares[it_worker_type_ctr,
@@ -196,7 +235,7 @@ def cme_simu_demand_params_ces_single(it_worker_types=2,
             ar_it_inputs = np.append(ar_it_inputs, it_input_key_ctr)
 
     # Aggregation layer
-    dc_ces[0], _ = cme_simu_demand_ces_inner_dict(
+    _, dc_ces[0], _ = cme_simu_demand_ces_inner_dict(
         it_lyr=0, fl_pwr=fl_power,
         ar_it_ipt=ar_it_inputs)
 
@@ -221,18 +260,17 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     different elasticity of substitution at each layer, but the same elasticity of substitution
     within layer. 
 
-    We allow for any number of CES layers, and any number of children at each layer. The number of child for each node 
-    at each layer is assumed to be identical. 
+    We allow for any number of CES layers, and any number of children at each layer.
+    The number of children for each node at each layer is assumed to be identical.
 
-    We randomly draw the share parameters for each sub-nest, with 
-    the share parameter values within each subnest summing up to one. 
-    We also randomly draw the elasticity of substitution relevant parameter at each 
-    subnest. 
+    We randomly draw the share parameters for each sub-nest, with the share parameter values
+    within each subnest summing up to one. We also randomly draw the elasticity of substitution
+    relevant parameter at each subnest.
 
     Assume symmetric nesting. There are some M layers of nesting. 
-    N_m is the number of children at each layer. And we have a subset of 
-    these layers that identical occupational groups, with the
-    remaining subset of layers identifying worker types. We want to generate
+    N_m is the number of children at each layer for each nest. And we have a subset of
+    these layers representing occupational groups, with the
+    remaining subsets of layers identifying worker types. We want to generate
     unique occ and wrk keys based on these meshed-nests.
 
     We generated a `dc_ces_flat`, which is a dictionary with keys for every child in the 
@@ -271,7 +309,9 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     ----------
     ar_it_chd_tre : list, optional
         A list of M element for the M layers of nesting, each number corresponds to N_m, NOte if M is 2, then the root layer 
-        is 0, the first layer is 1, and the second layer is 2, the list here includes [N_1, N_2], by default [2,2,2,2]
+        is 0, the first layer is 1, and the second layer is 2, the list here includes [N_1, N_2], by default [2,2,2,2].
+        The layers are specified as an upside down base up tip bottom triangle. The "top" layer
+        is the base of the triangle, which provides observed wages and quantities. 
     ar_it_occ_lyr : list, optional
         A list of less than M elements, including which of the M layers is for occupations suppose
         the second and third layer are then [2,3]. by default [2,3]
@@ -309,7 +349,7 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     #     }
     # }
 
-    # Generate work and occ keys
+    # 1. Generate work and occ keys
     ls_mnest_wrk_occ_keys = cme_simu_demand_mnest_wkr_occ_keys(
         ar_it_chd_tre=ar_it_chd_tre, ar_it_occ_lyr=ar_it_occ_lyr,
         verbose=verbose_debug)
@@ -320,12 +360,10 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     # Shared parameters
     it_layer_cnt = len(ar_it_chd_tre)
 
-    # Initialize share parameters and power parameters
+    # 2. Initialize Q and P, share parameters, and power parameters
     # Assumed here that the power coefficients are homogeneous within-layer
-    # 1. Total coefficient count
+    # 2.1. Number of children at neach layer
     ar_it_tre_up_cnt = np.empty([it_layer_cnt, ], dtype=int)
-
-    # this
     for it_layer_ctr_rev in np.arange(it_layer_cnt):
         it_tre_up_cnt = np.prod(
             np.array(ar_it_chd_tre[0:(it_layer_cnt - it_layer_ctr_rev)]))
@@ -333,13 +371,13 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     if verbose_debug:
         print(f'{ar_it_tre_up_cnt=}')
 
-    # Simulate data Q and P
+    # 2.2. Simulate data Q and P
     if bl_simu_q:
         ar_rand_q = np.random.rand(ar_it_tre_up_cnt[0])
     if bl_simu_p:
         ar_rand_p = np.random.rand(ar_it_tre_up_cnt[0])
 
-    # Simulate parameters
+    # 2.3. Simulate parameters
     if bl_simu_params:
         np.random.seed(it_seed)
         ar_rand_coef_shares = np.random.rand(np.sum(ar_it_tre_up_cnt))
@@ -349,19 +387,21 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
         ar_rand_coef_shares = np.array([None] * np.sum(ar_it_tre_up_cnt))
         ar_power = np.array([None] * it_layer_cnt)
 
-    # Handling bottom layer trees
+    # 3. Gen dict bottom-most layer
+    # 3.1. Bottom layer children keys and their parents' keys
     it_leaf_nodes = ar_it_chd_tre[-1]
     ls_it_leaf_nodes = list(range(1, (it_leaf_nodes + 1)))
     it_tre_up_cnt = np.prod(np.array(ar_it_chd_tre[0:-1]))
     it_lower_count = it_tre_up_cnt * it_leaf_nodes + 1
     # Construct bottom most dictionary, flat, to be reorganized later.
+    # dc_ces_keys_tree = {13: [1, 2, 3], 14: [4, 5, 6], 15: [7, 8, 9], 16: [10, 11, 12]}
     dc_ces_keys_tree = dict([(it_tre_ctr + it_lower_count,
                               list(ls_it_leaf_nodes + (it_tre_ctr) * it_leaf_nodes))
                              for it_tre_ctr in np.arange(it_tre_up_cnt)])
 
+    # 3.2. Loop over each nest at bottom-most layer, and gen dict for bottom nodes
     # Storage
     dc_ces_flat = {}
-    # Bottom-most layer, generate dictionary elements
     for it_parent, ar_it_children in dc_ces_keys_tree.items():
         if verbose_debug:
             print(f'{it_parent=} and {ar_it_children=}')
@@ -396,11 +436,15 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
             fl_power = None
             ar_it_ipt = None
 
+            # Bottom-most node value defaults
+            it_node_index = it_chd_ctr
+
             # these fl_shr sum to 1 within nest
             fl_shr = ar_rand_coef_shares_children[it_chd_ctr]
-            dc_ces_flat[it_child], _ = cme_simu_demand_ces_inner_dict(
+            _, dc_ces_flat[it_child], _ = cme_simu_demand_ces_inner_dict(
                 it_lyr=it_layer_cnt, it_prt=it_parent,
                 it_wkr=it_wkr_idx, it_occ=it_occ_idx,
+                it_nvi=it_node_index,
                 fl_pwr=fl_power, fl_shr=fl_shr,
                 ar_it_ipt=ar_it_ipt,
                 fl_qty=fl_qty, fl_wge=fl_wge)
@@ -413,9 +457,12 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     it_lower_count_last = it_lower_count
     it_lower_count = it_lower_count + it_tre_up_cnt
 
+    # 4. Gen higher layer nested-dict
     # it_ctr_layer: layer bottom most is counter 1 but layer = len(ar)
     it_ctr_layer = 1
+    # 4.1. Iterate over layers from bottom to top
     # it_brh_chd_layer: number of children per branch at layer
+    # ar_it_chd_tre = [2, 3, 4], and, ar_it_chd_tre[0:-1] = [2, 3]
     for it_brh_chd_layer_rev in reversed(ar_it_chd_tre[0:-1]):
         if verbose_debug and it_ctr_layer > 1:
             pprint.pprint(dc_ces_keys_tree, width=10)
@@ -458,16 +505,22 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
                     print(f'{it_within_cnt=}')
                 dc_nest[it_within_cnt] = dc_ces_keys_tree[it_within_cnt]
 
-                # Single layer nested CES
+                # Higher layer information
                 it_lyr = it_layer_cnt - (it_ctr_layer - 1)
                 it_parent = it_dc_update_ctr
                 fl_power = ar_power[it_lyr]
                 fl_shr = ar_rand_coef_shares_children[it_cur_chd]
                 ar_it_ipt = [key for key, nest in dc_ces_flat.items()
                              if nest['prt'] == it_within_cnt]
-                dc_ces_flat[it_within_cnt], _ = cme_simu_demand_ces_inner_dict(
+
+                # Higher layer value keys and var name for children
+                it_node_index = it_cur_chd
+                # st_node_children_string = "vlyr" + str(it_ctr_layer)
+
+                _, dc_ces_flat[it_within_cnt], _ = cme_simu_demand_ces_inner_dict(
                     it_lyr=it_lyr, it_prt=it_parent,
                     fl_pwr=fl_power, fl_shr=fl_shr,
+                    it_nvi=it_node_index,
                     ar_it_ipt=ar_it_ipt)
 
             dc_update[it_dc_update_ctr] = dc_nest
@@ -482,13 +535,16 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
     # top layer of CES
     it_top_key_index = it_lower_count - 1
     it_lyr = 0
+    it_nvi = 0
     it_parent = None
     fl_power = ar_power[it_lyr]
     fl_shr = None
     ar_it_ipt = [key for key, nest in dc_ces_flat.items()
                  if nest['prt'] == it_top_key_index]
-    dc_ces_flat[it_top_key_index], _ = cme_simu_demand_ces_inner_dict(
+
+    _, dc_ces_flat[it_top_key_index], _ = cme_simu_demand_ces_inner_dict(
         it_lyr=it_lyr, it_prt=it_parent,
+        it_nvi=it_nvi,
         fl_pwr=fl_power, fl_shr=fl_shr,
         ar_it_ipt=ar_it_ipt)
 
@@ -506,31 +562,31 @@ def cme_simu_demand_params_ces_nested(ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[1]
 
 # Test
 if __name__ == "__main__":
-    # All filled data/params
-    dc_ces_flat = cme_simu_demand_params_ces_single(
-        it_worker_types=2,
-        it_occ_types=2,
-        fl_power_min=0.1,
-        fl_power_max=0.8,
-        it_seed=123,
-        verbose=True)
-
-    # All None
-    dc_ces_flat = cme_simu_demand_params_ces_single(
-        it_worker_types=2,
-        it_occ_types=2,
-        bl_simu_params=False,
-        verbose=True)
-
-    # All filled data/params, simulated parameters and quantity and wages
-    dc_dc_ces_nested = cme_simu_demand_params_ces_nested(
-        ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[2],
-        fl_power_min=0.1,
-        fl_power_max=0.8,
-        it_seed=123,
-        bl_simu_q=True,
-        bl_simu_p=True,
-        verbose=True, verbose_debug=True)
+    # # All filled data/params
+    # dc_ces_flat = cme_simu_demand_params_ces_single(
+    #     it_worker_types=2,
+    #     it_occ_types=2,
+    #     fl_power_min=0.1,
+    #     fl_power_max=0.8,
+    #     it_seed=123,
+    #     verbose=True)
+    #
+    # # All None
+    # dc_ces_flat = cme_simu_demand_params_ces_single(
+    #     it_worker_types=2,
+    #     it_occ_types=2,
+    #     bl_simu_params=False,
+    #     verbose=True)
+    #
+    # # All filled data/params, simulated parameters and quantity and wages
+    # dc_dc_ces_nested = cme_simu_demand_params_ces_nested(
+    #     ar_it_chd_tre=[2, 2, 3], ar_it_occ_lyr=[2],
+    #     fl_power_min=0.1,
+    #     fl_power_max=0.8,
+    #     it_seed=123,
+    #     bl_simu_q=True,
+    #     bl_simu_p=True,
+    #     verbose=True, verbose_debug=True)
 
     # All None, generate skeleton to be filled with estimates
     # results or data.
@@ -553,3 +609,4 @@ if __name__ == "__main__":
 
     pd.pandas.set_option('display.max_rows', 10)
     pd.pandas.set_option('display.max_columns', 10)
+
