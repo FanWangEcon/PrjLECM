@@ -13,6 +13,92 @@ import pandas as pd
 
 import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
 
+def cme_simu_ces_shrparam_poly_coef(
+    ar_it_poly_order = [3, 3, 0],
+    ar_it_poly_seed = [123, 345, 445],
+    dc_ar_fl_poly_scale = {0:[5e0, 1e-1, 1e-2, 1e-3], 1:[3e0, 1e0, 1e-2, 1e-2], 2:[1e0]},
+    dc_ar_bl_poly_pos = {0:[True, True, False, True], 1:[True, True, False, True], 2:[True]},
+    verbose = False        
+):
+    """Generate dict of polynomial coefficient array for constructing share parameters
+
+    SHARE = MT_X_POLY x AR_POLY_COEF, we generate AR_POLY_COEF here. 
+
+    Parameters
+    ----------
+    ar_it_poly_order : list, optional
+        Polynomial order for each nest, by default [3, 3, 0]
+    ar_it_poly_seed : list, optional
+        Coefficient seed per nest, by default [123, 345, 445]
+    dc_ar_fl_poly_scale : dict, optional
+        Coefficient scaling per nest and child, 
+        by default {0:[5e0, 1e-1, 1e-2, 1e-3], 1:[3e0, 1e0, 1e-2, 1e-2], 2:[1e0]}
+    dc_ar_bl_poly_pos : dict, optional
+        Coefficient pos or neg per nest and child, 
+        by default {0:[True, True, False, True], 1:[True, True, False, True], 2:[True]}
+    verbose : bool, optional
+        print more, by default False
+
+    Returns
+    -------
+    dict of numpy.array
+        Each element of the dictionary is for a particular nest. 1 by K. 
+        Each column is coefficient for an observable that is nest and child 
+        specific. The random polynomial parameters are nest specific but not child
+        specific. K is the polynomial order + 1. 
+        is a polynomial expanded value based on an underlying scalar value
+        from `dc_ar_fl_x_obs`, number of polynomial-expansion order 
+        per nest is determined by elements of `ar_it_poly_order`
+    """
+    # Number nests
+    it_nest_count = len(ar_it_poly_order)
+    # # Count dict size, this must match
+    # it_nest_count_dc = len(dc_ar_fl_x_obs)
+
+    # Storage output 
+    dc_ar_poly_coef = {}
+    # loop over nest and element
+    for it_nest_ctr in range(it_nest_count):
+
+        # Polynomial order and seed
+        it_poly_order = ar_it_poly_order[it_nest_ctr]
+        it_poly_seed = ar_it_poly_seed[it_nest_ctr]
+
+        # Polynomial scaling array and pos boolean array
+        ar_fl_poly_scale = dc_ar_fl_poly_scale[it_nest_ctr]
+        ar_bl_poly_pos = dc_ar_bl_poly_pos[it_nest_ctr]
+        
+        # Set seed
+        np.random.seed(it_poly_seed)
+
+        # generate random coefficients
+        ar_fl_poly_coef_unif0t1 = np.random.rand(it_poly_order+1)
+
+        # Consistent with `cme_simu_ces_shrparam_poly_obs` return, columns are polynomial count
+        ar_fl_poly_coef = np.empty([1, it_poly_order+1])
+        # Generate coefficient by coefficient
+        for it_step_order in np.arange(it_poly_order+1):
+
+            # Random draw
+            fl_poly_coef_unif0t1 = ar_fl_poly_coef_unif0t1[it_step_order]
+            # Polynomial nest- and child-specific scaler and pos/neg
+            fl_poly_scale = ar_fl_poly_scale[it_step_order]
+            bl_poly_pos = ar_bl_poly_pos[it_step_order]
+
+            fl_poly_coef = fl_poly_coef_unif0t1*fl_poly_scale
+            if bl_poly_pos is False:
+                fl_poly_coef = (-1)*fl_poly_coef
+
+            ar_fl_poly_coef[0, it_step_order] = fl_poly_coef
+        
+        # Store 
+        dc_ar_poly_coef[it_nest_ctr] = ar_fl_poly_coef
+            
+    # print
+    if verbose:
+        print(f'F-714190, A, {dc_ar_poly_coef=}')
+
+    return dc_ar_poly_coef
 
 def cme_simu_ces_shrparam_poly_obs(
         ar_it_poly_order = [3, 3, 0],
@@ -20,6 +106,8 @@ def cme_simu_ces_shrparam_poly_obs(
         verbose = False        
 ):    
     """Generate polynomial expanded X input matrix for share parameters
+
+    SHARE = MT_X_POLY x AR_POLY_COEF
 
     This function carries out "Implementation Function 2", Polynomial "observable" matrix generator. 
     From https://github.com/FanWangEcon/PrjLECM/issues/2.
@@ -43,17 +131,20 @@ def cme_simu_ces_shrparam_poly_obs(
     Parameters
     ----------
     ar_it_poly_order : list, optional
-        _description_, by default [3, 3, 0]
+        Each element of list is polynomial order for a nest, by default [3, 3, 0]
     dc_ar_fl_x_obs : dict, optional
-        _description_, by default {0:[25, 35, 45], 1:[25,35,45], 2:[0,1]}
+        Dict is indexed by nest index, elements in each dict-value-list corresponds
+        to the number of children in each nest, by default {0:[25, 35, 45], 1:[25,35,45], 2:[0,1]}
     verbose : bool, optional
         _description_, by default False
 
     Returns
     -------
     dict of numpy.array
-        Each element of the dictionary is for a particular nest. Each row
-        is for a particular parameter in the nest/subnest. Each column
+        Each element of the dictionary is for a particular nest. M by K.
+        M is number of children per nest, K is number of observables determining
+        share parameter per nest and child. K is polynomial order + 1.
+        Each row is for a particular parameter in the nest/subnest. Each column
         is a polynomial expanded value based on an underlying scalar value
         from `dc_ar_fl_x_obs`, number of polynomial-expansion order 
         per nest is determined by elements of `ar_it_poly_order`
@@ -65,7 +156,7 @@ def cme_simu_ces_shrparam_poly_obs(
     # it_nest_count_dc = len(dc_ar_fl_x_obs)
 
     # Storage output 
-    dc_mt_x_poly = {}
+    dc_mt_poly_x = {}
     # loop over nest and element
     for it_nest_ctr in range(it_nest_count):
 
@@ -87,14 +178,14 @@ def cme_simu_ces_shrparam_poly_obs(
                 mt_fl_x_poly[it_x_obs_ctr, it_poly_ctr] = fl_x_poly
 
         # Store to dictionary
-        dc_mt_x_poly[it_nest_ctr] = mt_fl_x_poly
+        dc_mt_poly_x[it_nest_ctr] = mt_fl_x_poly
 
     # print
     if verbose:
-        print(f'F-714190, {dc_mt_x_poly=}')
+        print(f'F-714190, B, {dc_mt_poly_x=}')
 
     # return 
-    return(dc_mt_x_poly)
+    return(dc_mt_poly_x)
 
 
 
@@ -102,6 +193,7 @@ if __name__ == "__main__":
 
     # Default call
     cme_simu_ces_shrparam_poly_obs(verbose=True)
+    cme_simu_ces_shrparam_poly_coef(verbose=True)
 
 
 
