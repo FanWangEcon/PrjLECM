@@ -14,15 +14,18 @@ import pandas as pd
 import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
 
 def cme_simu_ces_shrparam_poly_coef(
-    ar_it_poly_order = [3, 3, 0],
-    ar_it_poly_seed = [123, 345, 445],
-    dc_ar_fl_poly_scale = {0:[5e0, 1e-1, 1e-2, 1e-3], 1:[3e0, 1e0, 1e-2, 1e-2], 2:[1e0]},
-    dc_ar_bl_poly_pos = {0:[True, True, False, True], 1:[True, True, False, True], 2:[True]},
+    ar_it_poly_order = [3, 3, 1],
+    ar_it_poly_seed = [123, 456, 445],
+    dc_ar_fl_poly_scale = {0:[5e0, 1e-1, 1e-2, 1e-3], 1:[3e0, 1e0, 1e-2, 1e-2], 2:[1e0, 1e0]},
+    dc_ar_bl_poly_pos = {0:[True, True, False, True], 1:[True, True, False, True], 2:[True, True]},
     verbose = False        
 ):
     """Generate dict of polynomial coefficient array for constructing share parameters
 
     SHARE = MT_X_POLY x AR_POLY_COEF, we generate AR_POLY_COEF here. 
+
+    This function carries out "Implementation Function 3", Generate polynomial coefficients.
+    From https://github.com/FanWangEcon/PrjLECM/issues/2.
 
     Parameters
     ----------
@@ -55,7 +58,7 @@ def cme_simu_ces_shrparam_poly_coef(
     # # Count dict size, this must match
     # it_nest_count_dc = len(dc_ar_fl_x_obs)
 
-    # Storage output 
+    # Storage output
     dc_ar_poly_coef = {}
     # loop over nest and element
     for it_nest_ctr in range(it_nest_count):
@@ -101,7 +104,7 @@ def cme_simu_ces_shrparam_poly_coef(
     return dc_ar_poly_coef
 
 def cme_simu_ces_shrparam_poly_obs(
-        ar_it_poly_order = [3, 3, 0],
+        ar_it_poly_order = [3, 3, 1],
         dc_ar_fl_x_obs = {0:[25, 35, 45], 1:[25,35,45], 2:[0,1]}, 
         verbose = False        
 ):    
@@ -155,7 +158,7 @@ def cme_simu_ces_shrparam_poly_obs(
     # # Count dict size, this must match
     # it_nest_count_dc = len(dc_ar_fl_x_obs)
 
-    # Storage output 
+    # storage output 
     dc_mt_poly_x = {}
     # loop over nest and element
     for it_nest_ctr in range(it_nest_count):
@@ -187,13 +190,96 @@ def cme_simu_ces_shrparam_poly_obs(
     # return 
     return(dc_mt_poly_x)
 
+def cme_simu_ces_shrparam_param_gen(
+    dc_mt_poly_x = cme_simu_ces_shrparam_poly_obs(verbose=True),
+    dc_ar_poly_coef = cme_simu_ces_shrparam_poly_coef(verbose=True),
+    verbose = False        
+):
+    """Generate prod-nest share parameters, given poly obs and coefficients
 
+    Generates production-function and nest-specific share parameters across
+    all children within nest. 
 
-if __name__ == "__main__":
+    Parameters
+    ----------
+    dc_mt_poly_x : _type_, optional
+        _description_, by default cme_simu_ces_shrparam_poly_obs(verbose=True)
+    dc_ar_poly_coef : _type_, optional
+        _description_, by default cme_simu_ces_shrparam_poly_coef(verbose=True)
+    verbose : bool, optional
+        _description_, by default False
+    """
 
-    # Default call
-    cme_simu_ces_shrparam_poly_obs(verbose=True)
-    cme_simu_ces_shrparam_poly_coef(verbose=True)
+    # Number nests
+    it_nest_count = len(dc_mt_poly_x)    
 
+    # storage output 
+    dc_ar_shares = {}
+    dc_fl_normalize = {}
+    # loop over nest and element
+    for it_nest_ctr in range(it_nest_count):
 
+        # coefficients and polynomials
+        mt_poly_x = dc_mt_poly_x[it_nest_ctr]
+        ar_poly_coef = dc_ar_poly_coef[it_nest_ctr]
 
+        # nest- and child-specific share parameters
+        ar_coef_child = np.matmul(mt_poly_x, np.transpose(ar_poly_coef))
+
+        # Store to dictionary
+        dc_ar_shares[it_nest_ctr] = ar_coef_child
+
+    if verbose:
+        print(f'F-714190, C, {dc_ar_shares=}')
+
+    return(dc_ar_shares)
+
+def cme_simu_ces_shrparam_normalize(
+    dc_ar_shares = cme_simu_ces_shrparam_param_gen(verbose=True),
+    fl_share_sum = 1,
+    verbose = False        
+):
+    """Normalize share parameters across nests
+
+    Share parameters need to be normalized, by default, share parameters within
+    nest sums to one. And we keep the normalizing constant, and the adjusted
+    coefficients. 
+
+    Parameters
+    ----------
+    dc_ar_share : _type_, optional
+        output of `cme_simu_ces_shrparam_param_gen`. 
+    fl_share_sum : float, optional
+        Sum of share parameters within nest.
+    verbose : bool, optional
+        _description_, by default False
+    """
+
+    # Number nests
+    it_nest_count = len(dc_ar_shares)    
+
+    # storage output 
+    dc_ar_shares_normalized = {}
+    dc_fl_normalize = {}
+    # loop over nest and element
+    for it_nest_ctr in range(it_nest_count):
+
+        # nest- and child-specific share parameters
+        ar_coef_child = dc_ar_shares[it_nest_ctr]
+
+        # Adjustment ratio
+        fl_existing_sum = sum(ar_coef_child)
+        fl_adj_ratio = fl_share_sum/fl_existing_sum
+
+        # Adjust
+        ar_coef_child_adj = ar_coef_child*fl_adj_ratio
+
+        # Store to dictionary
+        dc_ar_shares_normalized[it_nest_ctr] = ar_coef_child_adj
+        dc_fl_normalize[it_nest_ctr] = fl_adj_ratio
+
+    if verbose:
+        print(f'F-714190, D1, {dc_ar_shares_normalized=}')
+        print(f'F-714190, D2, {dc_fl_normalize=}')
+
+    return dc_ar_shares_normalized, dc_fl_normalize
