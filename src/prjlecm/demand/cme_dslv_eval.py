@@ -73,14 +73,18 @@ def cme_prod_ces_nest_agg_q_p(dc_ces_flat, st_solve_type='qty', verbose=False, v
             for it_chd_key in ar_it_ipt:
                 dc_child = dc_ces_flat[it_chd_key]
                 ar_shr = np.append(ar_shr, dc_child['shr'])
-                ar_qty = np.append(ar_qty, dc_child['qty'])
-                ar_wge = np.append(ar_wge, dc_child['wge'])
+                if st_solve_type == "qty":
+                    ar_qty = np.append(ar_qty, dc_child['qty'])
+                if st_solve_type == "wge": 
+                    ar_wge = np.append(ar_wge, dc_child['wge'])
 
             if verbose_debug:
                 print(f'{it_prt_key=} and {ar_it_ipt=}')
                 print(f'{ar_shr=}')
-                print(f'{ar_qty=}')
-                print(f'{ar_wge=}')
+                if st_solve_type == "qty":
+                    print(f'{ar_qty=}')
+                if st_solve_type == "wge": 
+                    print(f'{ar_wge=}')
                 print(f'{fl_pwr=}')
 
             # 6. aggregate using cme_prod_ces

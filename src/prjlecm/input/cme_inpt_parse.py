@@ -172,53 +172,6 @@ def cme_parse_demand_tbidx(dc_ces_flat):
     return it_max_layer, ls_maxlyr_key, it_lyr0_key
 
 
-def cme_parse_qtwg_mat(dc_ces_flat, ar_splv_totl_acrs_i=None):
-    """
-    Obtain from the bottom-most layer, matrix of qty and wge.
-
-    Rows are worker types and columns are occupation types.
-
-    :param dc_ces_flat:
-    :return:
-    """
-
-    __, ls_maxlyr_key, __ = cme_parse_demand_tbidx(
-        dc_ces_flat)
-    dc_parse_occ_wkr_lst = cme_parse_occ_wkr_lst(dc_ces_flat)
-    it_worker_types = dc_parse_occ_wkr_lst['it_wkr_cnt']
-    it_occ_types = dc_parse_occ_wkr_lst['it_occ_cnt']
-
-    mt_qtlv_all = np.zeros([it_worker_types, it_occ_types + 1], dtype=float)
-    mt_wglv_all = np.zeros([it_worker_types, it_occ_types], dtype=float)
-    for it_key_idx in ls_maxlyr_key:
-        it_occ = dc_ces_flat[it_key_idx]['occ']
-        it_wkr = dc_ces_flat[it_key_idx]['wkr']
-
-        fl_qty = dc_ces_flat[it_key_idx]['qty']
-        mt_qtlv_all[it_wkr, it_occ + 1] = fl_qty
-        fl_wge = dc_ces_flat[it_key_idx]['wge']
-        mt_wglv_all[it_wkr, it_occ] = fl_wge
-
-    if ar_splv_totl_acrs_i is not None:
-        mt_qtlv_all[:, 0] = ar_splv_totl_acrs_i - np.sum(mt_qtlv_all, 1)
-
-    pd_qtlv_all = pd.DataFrame(
-        mt_qtlv_all,
-        index=["i" + str(i + 1)
-               for i in np.arange(np.shape(mt_qtlv_all)[0])],
-        columns=["j" + str(j) for j in np.arange(np.shape(mt_qtlv_all)[1])]
-    )
-
-    pd_wglv_all = pd.DataFrame(
-        mt_wglv_all,
-        index=["i" + str(i + 1)
-               for i in np.arange(np.shape(mt_wglv_all)[0])],
-        columns=["j" + str(j + 1)
-                 for j in np.arange(np.shape(mt_wglv_all)[1])]
-    )
-
-    return pd_qtlv_all, pd_wglv_all
-
 
 def cme_parse_tree(dc_ces_flat):
     pass

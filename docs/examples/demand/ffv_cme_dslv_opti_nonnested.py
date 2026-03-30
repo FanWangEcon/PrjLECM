@@ -87,7 +87,7 @@ For canopy nodes, we have some additional information. To help with the identity
 
 There are two ways of thinking about wages and quantity from a solution point of view:
 
-- The wage and quantity values could be solved in equilibrium given parameters. This is what we do in file :doc:`examples/equi/ffv_sme_equi_solve_gen_inputs.py`, where we solve for equilibrium wages and quantities given parameters on the demand and supply side.
+- The wage and quantity values could be solved in equilibrium given parameters. This is what we do in file :doc:`../equi/ffv_sme_equi_solve_gen_inputs.py`, where we solve for equilibrium wages and quantities given parameters on the demand and supply side.
 - Given wages, we can solve for quantities, this is what we do here on this page.
 
 """

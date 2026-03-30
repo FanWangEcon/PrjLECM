@@ -12,6 +12,92 @@ import pprint
 import numpy as np
 import pandas as pd
 
+def cme_demand_ces_nonnested_example():
+    
+    # In the example below, we have a single layer, non-nested CES system coded as a python dictionary.
+    
+    # WE have a CES like this:j
+    # .. math::
+    # 
+    #     \begin{align}
+    #     \begin{split}
+    #     Y &= 
+    #     \left(
+    #         \theta_{1,1} \cdot x_{1,1}^{\psi} + 
+    #         \theta_{1,2} \cdot x_{1,2}^{\psi} + 
+    #         \theta_{2,1} \cdot x_{2,1}^{\psi} + 
+    #         \theta_{2,2} \cdot x_{2,2}^{\psi}
+    #     \right)^{\frac{1}{\psi}}\\
+    #     &=
+    #     \left(
+    #         0.40 \cdot x_{1,1}^{0.60} + 
+    #         0.16 \cdot x_{1,2}^{0.60} + 
+    #         0.13 \cdot x_{2,1}^{0.60} + 
+    #         0.31 \cdot x_{2,2}^{0.60}
+    #     \right)^{\frac{1}{0.60}}\\
+    #     \end{split}
+    #     \end{align}
+    # 
+    
+    # There are 5 nodes, 1 node at the 0th layer (the highest), 4 in layer 1
+    # There are four "share" parameters, and one elasticity of substitution parameter. 
+    # 
+    # Each element of the dictionary stores a different node. 
+    # Each node's value is a dictionary of information about the node:
+    # 
+    # ipt: identifying the keys of children nodes of this parent node. 
+    # lyr: identifying which nested layer this node resides on
+    # prt: identifying the parent node of the current node
+    # 
+    # We distinguish between "occ" occupation and "wkr" worker type. 
+    # Someone who is female and college educated could be a worker type, then there could be four worker types, by gender and by college education jointly
+    # Each of these four workers, could be choosing among occupations.
+    # The CES aggregates across workers in different occupations. 
+    # We tag each node with which type of worker resides there, and what is the occupation for the worker. 
+    # 
+
+     
+    {0: {'ipt': [1, 2, 3, 4],
+         'lyr': 0,
+         'nvi': None,
+         'occ': None,
+         'prt': None,
+         'pwr': 0.603628,
+         'shr': None,
+         'wkr': None},
+     1: {'ipt': None,
+         'lyr': 1,
+         'nvi': None,
+         'occ': 0,
+         'prt': 0,
+         'pwr': None,
+         'shr': 0.395547,
+         'wkr': 0},
+     2: {'ipt': None,
+         'lyr': 1,
+         'nvi': None,
+         'occ': 1,
+         'prt': 0,
+         'pwr': None,
+         'shr': 0.162508,
+         'wkr': 0},
+     3: {'ipt': None,
+         'lyr': 1,
+         'nvi': None,
+         'occ': 0,
+         'prt': 0,
+         'pwr': None,
+         'shr': 0.128836,
+         'wkr': 1},
+     4: {'ipt': None,
+         'lyr': 1,
+         'nvi': None,
+         'occ': 1,
+         'prt': 0,
+         'pwr': None,
+         'shr': 0.313109,
+         'wkr': 1}}
+        
 
 def cme_simu_demand_ces_inner_dict(
     it_lyr=None,
@@ -33,11 +119,14 @@ def cme_simu_demand_ces_inner_dict(
     fl_sch=None,
     fl_sni=None,
 ):
+    
+    
     # if (it_wkr is not None):
     #     it_wkr = it_wkr + 100
     # if (it_occ is not None):
     #     it_occ = it_occ + 100
 
+    # Suppose we
     # lyr = layer
     # prt = parent
     # drv = derivative

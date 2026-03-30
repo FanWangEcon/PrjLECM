@@ -18,6 +18,7 @@ This section contains example galleries showcasing the features of prjlecm
    :maxdepth: 1
    :caption: Example Galleries: 
 
+   auto_examples/demand/index
    auto_examples/equi/index
 
 Indices and tables

@@ -53,30 +53,11 @@ myst_enable_extensions = [
 
 sphinx_gallery_conf = {
     'examples_dirs': [
-        '../examples/equi'
-    ],
-    'gallery_dirs': [
-        'auto_examples/equi'
-    ],
-    'filename_pattern': r'.*\.py$',
-    'ignore_pattern': r'__init__\.py',
-    'backreferences_dir': 'gen_modules/backreferences',
-    'doc_module': ('prjlecm',),
-    'reference_url': {
-        'prjlecm': None,
-    },
-    'image_srcset': ["1x"],
-    'subsection_order': None,
-    # Use MyST for markdown parsing
-    'pypandoc': False,
-    'use_pypandoc': False,
-}
-
-sphinx_gallery_conf = {
-    'examples_dirs': [
+        '../examples/demand',
         '../examples/equi'
     ],   # paths to your example scripts
     'gallery_dirs': [
+        'auto_examples/demand',
         'auto_examples/equi'
     ],   # where to save gallery generated output
     'filename_pattern': r'.*\.py$',   # include all .py files
