@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Testing solving for relative optimal equilibrium prices and quantities in labor market model
+Equilibrium solution (non-nested), step 4 illustration
 ======================================================================
 
 Part 4 of https://github.com/FanWangEcon/PrjLECM/issues/4

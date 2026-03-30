@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-Equilibrium solutions, single-layer CES, multi-nomial labor supply.
+Equilibrium solutions, single-layer CES, multinomial labor supply.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 https://github.com/FanWangEcon/PrjLECM/issues/5
@@ -159,6 +159,13 @@ Note that the probability ratio is the same as the quantity ratio because both a
 
 import prjlecm.input.cme_inpt_simu_supply as cme_inpt_simu_supply
 import prjlecm.input.cme_inpt_simu_demand as cme_inpt_simu_demand
+
+import prjlecm.demand.cme_dslv_opti as cme_dslv_opti
+import prjlecm.input.cme_inpt_parse as cme_inpt_parse
+import prjlecm.supply.cme_splv_opti as cme_splv_opti
+
+import prjlecm.input.cme_inpt_parse_wgqt as cme_inpt_parse_wgqt
+
 import prjlecm.input.cme_inpt_convert as cme_inpt_convert
 import prjlecm.equi.cme_equi_solve as cme_equi_solve
 import prjlecm.equi.cme_equi_solve_gen_inputs as cme_equi_solve_gen_inputs
@@ -166,16 +173,28 @@ import prjlecm.util.cme_supt_misc as cme_supt_misc
 import numpy as np
 import pandas as pd
 
+# %%
+# Implementation
+# ================
+# Our implementation involves three steps. First, we create a dataframe storing
+# all CES production function information, along with wages. Second, we convert the
+# dataframe to a demand dictionary. Third, we call the demand cost minimization solver to solve for optimal demand.
+# 
+# Step 1, Supply side input data frame
+# ------------------------------------
+# 
 # Create a pandas dataframe with the information below, exclude the wge and qty columns
-# Enter data row by row, after first creating the dataframe's column names.
-#    key_node  wkr  occ       itc  slp   wge   qty       qtp  lyr
-# 0         1    0    0 -0.124716  0.5  None  None  4.913439    0
-# 1         2    1    0 -3.412040  0.5  None  None  3.581734    0
-# 2         3    0    1 -2.997025  0.5  None  None  4.913439    0
-# 3         4    1    1 -1.140797  0.5  None  None  3.581734    0
+# Enter data row by row, after first creating the dataframe's column names::
+# 
+#       key_node  wkr  occ       itc  slp   wge   qty       qtp  lyr
+#    0         1    0    0 -0.124716  0.5  None  None  4.913439    0
+#    1         2    1    0 -3.412040  0.5  None  None  3.581734    0
+#    2         3    0    1 -2.997025  0.5  None  None  4.913439    0
+#    3         4    1    1 -1.140797  0.5  None  None  3.581734    0
 
 # Define the column names, excluding 'wge' and 'qty'
 columns = ["key_node", "wkr", "occ", "itc", "slp", "qtp", "lyr"]
+verbose = True
 
 # Create the DataFrame row by row
 data = [
@@ -192,22 +211,25 @@ dc_supply_lgt = cme_inpt_convert.cme_convert_pd2dc(
 )
 
 # %%
+# Step 2, Demand side input data frame
+# ------------------------------------
 # Create a pandas dataframe with the information below, exclude the the columns with only None values.
 # Enter data row by row, after first creating the dataframe's column names.
+# See :doc:`../demand/ffv_cme_dslv_opti_nonnested.py` for more details::
 #
-#    key_node  lyr   prt   wkr   occ   nvi   nvl   nvb   nvr   nlb       shr  \
-# 0         1    1     0     0     0  <NA>  None  None  None  None  0.395547
-# 1         2    1     0     0     1  <NA>  None  None  None  None  0.162508
-# 2         3    1     0     1     0  <NA>  None  None  None  None  0.128836
-# 3         4    1     0     1     1  <NA>  None  None  None  None  0.313109
-# 4         0    0  <NA>  <NA>  <NA>  <NA>  None  None  None  None       NaN
+#       key_node  lyr   prt   wkr   occ   nvi   nvl   nvb   nvr   nlb       shr  \
+#    0         1    1     0     0     0  <NA>  None  None  None  None  0.395547
+#    1         2    1     0     0     1  <NA>  None  None  None  None  0.162508
+#    2         3    1     0     1     0  <NA>  None  None  None  None  0.128836
+#    3         4    1     0     1     1  <NA>  None  None  None  None  0.313109
+#    4         0    0  <NA>  <NA>  <NA>  <NA>  None  None  None  None       NaN
 
-#         pwr           ipt   qty   wge   drv   drc   shc   sni
-# 0       NaN          None  None  None  None  None  None  None
-# 1       NaN          None  None  None  None  None  None  None
-# 2       NaN          None  None  None  None  None  None  None
-# 3       NaN          None  None  None  None  None  None  None
-# 4  0.603628  [1, 2, 3, 4]  None  None  None  None  None  None
+#            pwr           ipt   qty   wge   drv   drc   shc   sni
+#    0       NaN          None  None  None  None  None  None  None
+#    1       NaN          None  None  None  None  None  None  None
+#    2       NaN          None  None  None  None  None  None  None
+#    3       NaN          None  None  None  None  None  None  None
+#    4  0.603628  [1, 2, 3, 4]  None  None  None  None  None  None
 
 # Define the column names that are NOT always None across all rows
 columns = ["key_node", "lyr", "prt", "wkr", "occ", "nvi", "shr", "pwr", "ipt"]
@@ -230,11 +252,11 @@ dc_demand_ces = cme_inpt_convert.cme_convert_pd2dc(
 )
 
 # %%
-# AIS ~ 2026-02-17 08:48:38
-# Given df_supply_params:
-# - Select unique `wkr` and` `qtp` combinations
-# - Sort by `wkr` in ascending
-# - Extract `qtp` values into a numpy array equal to ar_splv_totl_acrs_i
+# Step 3, Generate supply and demand side dictionaries.
+# ------------------------------------
+# Given demand and supply side input dataframes, we generated corresponding dictionaries. 
+# given these, we generate input dictionaries with all arrays and matrixes needed for equilibrium solution functions.
+# 
 ar_splv_totl_acrs_i = (
     df_supply_params.drop_duplicates(subset=["wkr", "qtp"])
     .sort_values(by="wkr")["qtp"]
@@ -248,6 +270,14 @@ dc_dmrl_intr_slpe = cme_equi_solve_gen_inputs.cme_equi_demand_dict_converter_non
 )
 
 # %%
+# Step 4, Solving the equilibrium problem
+# ------------------------------------
+# We call our equilibrium solution function, and solve for the equilibrium wages and quantities. 
+# See also :doc:`ffv_sme_equi_solve_step_s1`, :doc:`ffv_sme_equi_solve_step_s2`, 
+# :doc:`ffv_sme_equi_solve_step_s3`, :doc:`ffv_sme_equi_solve_step_s4`, and
+# :doc:`ffv_sme_equi_solve_step_s5` for more details on the solution steps, and
+# there are five of them. The function below calls step 1, and then the other
+# steps jointly.
 
 dc_equi_solve_sone = cme_equi_solve.cme_equi_solve_sone(
     dc_sprl_intr_slpe, dc_dmrl_intr_slpe, verbose=True
@@ -271,5 +301,61 @@ fl_nu1_solved, dc_equi_solv_sfur, fl_ces_output_max = cme_equi_solve.cme_equi_so
 cme_supt_misc.print_dict_aligned(fl_nu1_solved)
 cme_supt_misc.print_dict_aligned(fl_ces_output_max)
 cme_supt_misc.print_dict_aligned(dc_equi_solv_sfur)
+
+# %%
+# Solve for demand and supply quantities given prices, check if quantities match equilibrium quantities
+# =====================================================================================================
+# Above, we have just solved for the equilibrium wages and quantities jointly,
+# given demand and supply parameters.  Here we solve for the demand and supply
+# problems separately, using the wages we just found, to see if he optimal 
+# quantities supplied and demand match up with the equilibrium quantities. This
+# is a check to see if the equilibrium solution is consistent with the demand
+# and supply solutions. 
+# 
+# This check is important because of equilibrium solution algorithm does not rely on the demand 
+# and supply solvers below, so it is not by default that the results would match up. In 
+# most equilibrium solution set-ups, one solves for quantity demanded end supplied given different
+# levels of prices (wages), and then look for market clearing prices (wages). So the equilibrium
+# solution builds on the demand and supply solutions given wages.
+# 
+# That is not the case in our
+# solution structure, our equilibrium solution is a fully separate solution algorithm that does not
+# call the demand and supply solver. We are not iterating over prices to solve for market clearing prices, 
+# we have an semi-analytical equilibrium solution structure where the only unknown is the share of workers in 
+# leisure for one of the types of workers. 
+
+
+pd_wglv_all = dc_equi_solv_sfur["pd_wglv_all"]
+pd_qtlv_all = dc_equi_solv_sfur["pd_qtlv_all"]
+dc_demand_ces, dc_supply_lgt = cme_inpt_parse_wgqt.cme_parse_wgqt_pd2dc(
+    fl_output_target,
+    dc_demand_ces, dc_supply_lgt, pd_wglv_all, pd_qtlv_all
+)
+
+# 2. Given wages, solve optimal labor demands
+dc_demand_ces = cme_dslv_opti.cme_prod_ces_nested_solver(
+    dc_demand_ces, fl_Q_agg=None, verbose=False, verbose_debug=False
+)
+# Get optimal demand quantites
+pd_qtlv_all_demand, __ = cme_inpt_parse_wgqt.cme_parse_qtwg_dc2pd_demand(
+    dc_demand_ces, ar_splv_totl_acrs_i
+)
+# difference between optimal demand given prices and equilibrium quantities
+pd_qtlv_equi_vs_demand = pd_qtlv_all - pd_qtlv_all_demand
+fl_diff_equi_demand = np.sum(np.sum(np.abs(pd_qtlv_equi_vs_demand)))
+if verbose:
+    print(f"{pd_qtlv_all_demand=}")
+    print(f"{pd_qtlv_equi_vs_demand=}")
+    print(f"{fl_diff_equi_demand=}")
+
+# 3. Check on supply decisions
+dc_supply_lgt, pd_qtlv_all_supply = cme_splv_opti.cme_supply_lgt_solver(dc_supply_lgt)
+# difference between optimal supply given prices and equilibrium quantities
+pd_qtlv_equi_vs_supply = pd_qtlv_all - pd_qtlv_all_supply
+fl_diff_equi_supply = np.sum(np.sum(np.abs(pd_qtlv_equi_vs_supply)))
+if verbose:
+    print(f"{pd_qtlv_all_supply=}")
+    print(f"{pd_qtlv_equi_vs_supply=}")
+    print(f"{fl_diff_equi_supply=}")
 
 # %%
