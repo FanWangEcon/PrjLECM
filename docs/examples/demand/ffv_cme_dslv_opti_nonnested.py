@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""
-Solving a non-nested CES optimal demand problem (cost-minimization given output quantity)
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Solving a non-nested CES optimal demand problem (cost-minimization given output quantity and wages)
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Part 1 of https://github.com/FanWangEcon/PrjLECM/issues/7
 
@@ -62,8 +62,8 @@ Optimality conditions and optimal choices
 Optimality conditions and optimal choices are shown for example on this page: 
 `multi-input CES optimality conditions <https://fanwangecon.github.io/Py4Econ/prod/ces/htmlpdfr/fs_ces_multi_input.html>`_
 
-Storing results in as a tree, stored in dictionary and dataframes
-=================================================================
+Storing parameters, prices, and quantities in as a tree, stored in dictionary and dataframes
+==============================================================================================
 How do we store the information from a CES demand system? We do so as a tree, from root to canopy, with branching nests, assuming that each node can only have a single parent node.
 
 - **root**: that is the bottom-most layer, the final aggregation
@@ -82,8 +82,8 @@ For canopy nodes, we have some additional information. To help with the identity
 
 1. an occupation id 
 2. a worker type id
-3. the wage paid for one unit of this input
-4. the quantity demanded of this input (to be solved for)
+3. the wage paid for one unit of this input (to be solved for in equilibrium setting)
+4. the quantity demanded of this input (to be solved for in equilibrium but given wages)
 
 There are two ways of thinking about wages and quantity from a solution point of view:
 
@@ -234,7 +234,7 @@ print(dc_demand_ces)
 # %%
 # Step 3, solve the non-nested CES demand system
 # ---------------------------------------------------------
-# The equilibrium demand system is solved by calling the cost minimization
+# The demand solutions are found by calling the cost minimization
 # solver, which takes in the demand dictionary as input, and solves for the
 # cost-minimizing demand quantities given wages and output quantity target. We
 # set the output quantity target to 1 for this test. The quantity demanded in

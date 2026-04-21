@@ -19,6 +19,7 @@ This section contains example galleries showcasing the features of prjlecm
    :caption: Example Galleries: 
 
    auto_examples/demand/index
+   auto_examples/supply/index
    auto_examples/equi/index
 
 Indices and tables
