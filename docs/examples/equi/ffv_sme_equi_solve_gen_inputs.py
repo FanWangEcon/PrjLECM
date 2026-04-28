@@ -222,7 +222,7 @@ dc_supply_lgt = cme_inpt_convert.cme_convert_pd2dc(
 #    1         2    1     0     0     1  <NA>  None  None  None  None  0.162508
 #    2         3    1     0     1     0  <NA>  None  None  None  None  0.128836
 #    3         4    1     0     1     1  <NA>  None  None  None  None  0.313109
-#    4         0    0  <NA>  <NA>  <NA>  <NA>  None  None  None  None       NaN
+#    4         5    0  <NA>  <NA>  <NA>  <NA>  None  None  None  None       NaN
 
 #            pwr           ipt   qty   wge   drv   drc   shc   sni
 #    0       NaN          None  None  None  None  None  None  None
@@ -238,11 +238,11 @@ columns = ["key_node", "lyr", "prt", "wkr", "occ", "nvi", "shr", "pwr", "ipt"]
 # For missing values, use pd.NA, None, or float('nan') as appropriate
 
 data = [
-    [1, 1, 0, 0, 0, pd.NA, 0.395547, float("nan"), None],
-    [2, 1, 0, 0, 1, pd.NA, 0.162508, float("nan"), None],
-    [3, 1, 0, 1, 0, pd.NA, 0.128836, float("nan"), None],
-    [4, 1, 0, 1, 1, pd.NA, 0.313109, float("nan"), None],
-    [0, 0, pd.NA, pd.NA, pd.NA, pd.NA, float("nan"), 0.603628, [1, 2, 3, 4]],
+    [1, 1, 5, 0, 0, pd.NA, 0.395547, float("nan"), None],
+    [2, 1, 5, 0, 1, pd.NA, 0.162508, float("nan"), None],
+    [3, 1, 5, 1, 0, pd.NA, 0.128836, float("nan"), None],
+    [4, 1, 5, 1, 1, pd.NA, 0.313109, float("nan"), None],
+    [5, 0, pd.NA, pd.NA, pd.NA, pd.NA, float("nan"), 0.603628, [1, 2, 3, 4]],
 ]
 
 df_demand_params = pd.DataFrame(data, columns=columns)

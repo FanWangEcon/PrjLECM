@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'PrjLECM'
-copyright = '2025, Bhalotra, Fernandez, Wang, Yang'
-author = 'Bhalotra, Fernandez, Wang, Yang'
+copyright = '2025, Bhalotra, Fernandez, Wang, Xun'
+author = 'Bhalotra, Fernandez, Wang, Xun'
 release = '0.0.1'
 
 # -- General configuration ---------------------------------------------------

@@ -159,8 +159,11 @@ def cme_equi_supply_dict_converter_nonest(dc_supply_lgt, verbose=False):
 # Intercept and slope formula
 def cme_equi_demand_dict_converter_nonest(dc_ces, verbose=False):
     """Demand input dictionary parser for non-nested CES"""
-    ls_it_ipt = dc_ces[0]["ipt"]
-    fl_elas = dc_ces[0]["pwr"]
+    # find the key for the element of the `dc_ces` dictionary where lyr = 0
+    __, __, it_lyr0_key = cme_inpt_parse.cme_parse_demand_tbidx(dc_ces)
+
+    ls_it_ipt = dc_ces[it_lyr0_key]["ipt"]
+    fl_elas = dc_ces[it_lyr0_key]["pwr"]
     ls_res = cme_equi_demand_dict_converter_nest(
         dc_ces,
         st_rela_shr_key="shr",

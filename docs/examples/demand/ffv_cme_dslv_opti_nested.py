@@ -1,14 +1,21 @@
 # -*- coding: utf-8 -*-
 r"""
-Solving a non-nested CES optimal demand problem (cost-minimization given output quantity and wages)
+Solving a 2-layer nested CES optimal demand problem (cost-minimization given output quantity and wages)
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Part 1 of https://github.com/FanWangEcon/PrjLECM/issues/7
+Part 2 of https://github.com/FanWangEcon/PrjLECM/issues/7
 
-On this page, we Provide demand side equations for a non-nested CES problem.
-Given wages and output quantity target, we solve for cost-minimizing demand for labor.
+On this page, we provide demand side equations for a nested CES problem. There are
+three nests in three layers:
 
-Suppose we have the following production function
+1. the root (layer 0) branches out towards two nests (layer 1).
+2. each of the nest branches out towards two canopy nodes (layer 2).
+
+Given wages output, quantity target, and all CES parameters, we solve for cost-minimizing demand for labor.
+
+We build on the :doc:`ffv_cme_dslv_opti_nonnested` file, which solves the non-nested-CES demand system problem. 
+
+Suppose we have the following production function:
 
 Production function
 ===================
@@ -21,22 +28,30 @@ Suppose we have the following production function:
    \begin{split}
    Y(x_{1,1}, x_{1,2}, x_{2,1}, x_{2,2}) &= 
    \left(
-      \theta_{1,1} \cdot x_{1,1}^{\psi} + 
-      \theta_{1,2} \cdot x_{1,2}^{\psi} + 
-      \theta_{2,1} \cdot x_{2,1}^{\psi} + 
-      \theta_{2,2} \cdot x_{2,2}^{\psi}
+      \left(
+          \theta_{1,1} \cdot x_{1,1}^{\psi_1} + 
+          \theta_{1,2} \cdot x_{1,2}^{\psi_1}
+      \right)^{\frac{\psi}{\psi_1}} + 
+      \left(
+        \theta_{2,1} \cdot x_{2,1}^{\psi_2} + 
+        \theta_{2,2} \cdot x_{2,2}^{\psi_2}
+      \right)^{\frac{\psi}{\psi_2}}
    \right)^{\frac{1}{\psi}}\\
    &=
    \left(
-      0.40 \cdot x_{1,1}^{0.60} + 
-      0.16 \cdot x_{1,2}^{0.60} + 
-      0.13 \cdot x_{2,1}^{0.60} + 
-      0.31 \cdot x_{2,2}^{0.60}
-   \right)^{\frac{1}{0.60}}\\
+      \left(
+          0.30 \cdot x_{1,1}^{0.20} + 
+          0.70 \cdot x_{1,2}^{0.20}
+      \right)^{\frac{0.70}{0.20}} + 
+      \left(
+          0.10 \cdot x_{2,1}^{0.20} + 
+          0.90 \cdot x_{2,2}^{0.20}
+      \right)^{\frac{0.70}{0.20}}
+   \right)^{\frac{1}{0.70}}\\
    \end{split}
    \end{align}
 
-Note that the :math:`\theta_{i,j}` values sum up to one, and the :math:`{i,j}` subscript denote individual :math:`i` and occupation :math:`j`.
+Note that the :math:`\theta_{i,j}` values sum up to one within each nest, and the :math:`{i,j}` subscript denote individual :math:`i` and occupation :math:`j`. Additionally, for this example, we will assume that the elasticity of substitution between the two inputs in each nest of the canopy layer are the same.
 
 Cost minimization problem
 =========================
@@ -109,24 +124,6 @@ import prjlecm.input.cme_inpt_parse_wgqt as cme_inpt_parse_wgqt
 # Step 1, set up demand parameters dataframe, with wages
 # ---------------------------------------------------------
 #
-# We will create a pandas dataframe with the information below. Exclude the columns with
-# only ``None`` values, and enter the rows after first creating the dataframe's
-# column names::
-#
-#     key_node  lyr   prt   wkr   occ        shr  \
-#   0         1    1     5     0     0   0.395547
-#   1         2    1     5     0     1   0.162508
-#   2         3    1     5     1     0   0.128836
-#   3         4    1     5     1     1   0.313109
-#   4         5    0  <NA>  <NA>  <NA>        NaN
-#
-#           pwr           ipt   qty   wge
-#   0       NaN          None  None  None
-#   1       NaN          None  None  None
-#   2       NaN          None  None  None
-#   3       NaN          None  None  None
-#   4  0.603628  [1, 2, 3, 4]  None  None
-#
 # Build rows as dicts so each key is explicitly paired with its value, column key meanings:
 #
 #  * **key_node** : unique integer ID for this node in the CES tree
@@ -145,75 +142,101 @@ import prjlecm.input.cme_inpt_parse_wgqt as cme_inpt_parse_wgqt
 
 data = [
     # Canopy node: worker type 0 (wkr=0), occupation 0 (occ=0), i.e. x_{1,1}
-    # Share theta_{1,1}=0.395547 (largest share); wage w_{1,1}=0.9185
     # Parent is the root node (prt=0); has no sub-inputs (ipt=None)
     {
         "key_node": 1,  # unique node ID for this canopy
-        "lyr": 1,  # canopy layer, layer = 1 is canopy since this is non-nested
-        "prt": 5,  # parent node is the root node (key_node=0)
+        "lyr": 2,  # canopy layer, layer = 1 is canopy since this is non-nested
+        "prt": 5,  # parent node is the root node (key_node=5)
         "wkr": 0,  # worker type index 0
         "occ": 0,  # occupation index 0
-        "shr": 0.395547,  # theta_{1,1}: share weight in CES aggregate
+        "shr": 0.30,  # theta_{1,1}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
         "wge": 0.9185,  # wage w_{1,1}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 0 (wkr=0), occupation 1 (occ=1), i.e. x_{1,2}
-    # Share theta_{1,2}=0.162508 (smallest share); wage w_{1,2}=1.1306
     {
         "key_node": 2,  # unique node ID for this canopy
-        "lyr": 1,  # canopy layer, layer = 1 is canopy since this is non-nested
-        "prt": 5,  # parent node is the root node (key_node=0)
+        "lyr": 2,  # canopy layer, layer = 1 is canopy since this is non-nested
+        "prt": 5,  # parent node is the root node (key_node=5)
         "wkr": 0,  # worker type index 0
         "occ": 1,  # occupation index 1
-        "shr": 0.162508,  # theta_{1,2}: share weight in CES aggregate
+        "shr": 0.70,  # theta_{1,2}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
         "wge": 1.1306,  # wage w_{1,2}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 1 (wkr=1), occupation 0 (occ=0), i.e. x_{2,1}
-    # Share theta_{2,1}=0.128836 (second smallest); wage w_{2,1}=1.0628
     {
         "key_node": 3,  # unique node ID for this canopy
-        "lyr": 1,  # canopy layer, layer = 1 is canopy since this is non-nested
-        "prt": 5,  # parent node is the root node (key_node=0)
+        "lyr": 2,  # canopy layer, layer = 1 is canopy since this is non-nested
+        "prt": 6,  # parent node is the root node (key_node=6)
         "wkr": 1,  # worker type index 1
         "occ": 0,  # occupation index 0
-        "shr": 0.128836,  # theta_{2,1}: share weight in CES aggregate
+        "shr": 0.10,  # theta_{2,1}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
         "wge": 1.0628,  # wage w_{2,1}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 1 (wkr=1), occupation 1 (occ=1), i.e. x_{2,2}
-    # Share theta_{2,2}=0.313109; wage w_{2,2}=1.0519
     {
         "key_node": 4,  # unique node ID for this canopy
-        "lyr": 1,  # canopy layer, layer = 1 is canopy since this is non-nested
-        "prt": 5,  # parent node is the root node (key_node=5)
+        "lyr": 2,  # canopy layer, layer = 1 is canopy since this is non-nested
+        "prt": 6,  # parent node is the root node (key_node=6)
         "wkr": 1,  # worker type index 1
         "occ": 1,  # occupation index 1
-        "shr": 0.313109,  # theta_{2,2}: share weight in CES aggregate
+        "shr": 0.90,  # theta_{2,2}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
         "wge": 1.0519,  # wage w_{2,2}
         "qty": None,  # quantity demanded to be solved for
     },
+    # Aggregator over notes 1 and 2
+    # pwr = psi = 0.20 corresponds to sigma = 1/(1-psi) ~= 1.25
+    # ipt lists the key_node IDs of the two direct inputs; no worker/occ/share/wage at this level
+    {
+        "key_node": 5,  # root node ID (by convention 0)
+        "lyr": 1,  # aggregate layer (root)
+        "prt": 7,  # parent node is the root node (key_node=7)
+        "wkr": pd.NA,  # not applicable at aggregate level
+        "occ": pd.NA,  # not applicable at aggregate level
+        "shr": 0.50,  # share parameter at layer 1
+        "pwr": 0.20,  # psi = (sigma-1)/sigma; governs elasticity of substitution
+        "ipt": [1, 2],  # key_node IDs of the two canopy inputs to this aggregate
+        "wge": None,  # aggregate input price/wage to be constructed
+        "qty": None,  # quantity demanded to be solved for at the aggregate level
+    },
+    # Aggregator over notes 3 and 4
+    # pwr = psi = 0.20 corresponds to sigma = 1/(1-psi) ~= 1.25, same as the other nest
+    # ipt lists the key_node IDs of the two direct inputs; no worker/occ/share/wage at this level
+    {
+        "key_node": 6,  # root node ID (by convention 0)
+        "lyr": 1,  # aggregate layer (root)
+        "prt": 7,  # parent is the root node (key_node=7)
+        "wkr": pd.NA,  # not applicable at aggregate level
+        "occ": pd.NA,  # not applicable at aggregate level
+        "shr": 0.50,  # share parameter at layer 1
+        "pwr": 0.20,  # psi = (sigma-1)/sigma; governs elasticity of substitution
+        "ipt": [3, 4],  # key_node IDs of the two canopy inputs to this aggregate
+        "wge": None,  # aggregate input price/wage to be constructed
+        "qty": None,  # quantity demanded to be solved for at the aggregate level
+    },
     # Root / aggregate node: produces aggregate output Y from all four canopy inputs
     # pwr = psi = 0.603628 corresponds to sigma = 1/(1-psi) ~= 2.5
     # ipt lists the key_node IDs of the four direct inputs; no worker/occ/share/wage at this level
     {
-        "key_node": 5,  # root node ID (by convention 0)
+        "key_node": 7,  # root node ID (by convention 0)
         "lyr": 0,  # aggregate layer (root)
         "prt": pd.NA,  # root has no parent
         "wkr": pd.NA,  # not applicable at aggregate level
         "occ": pd.NA,  # not applicable at aggregate level
         "shr": float("nan"),  # no share parameter at the root
-        "pwr": 0.603628,  # psi = (sigma-1)/sigma; governs elasticity of substitution
-        "ipt": [1, 2, 3, 4],  # key_node IDs of the four canopy inputs to this aggregate
-        "wge": None,  # no wage at the aggregate node
+        "pwr": 0.70,  # psi = (sigma-1)/sigma; governs elasticity of substitution
+        "ipt": [5, 6],  # key_node IDs of the four canopy inputs to this aggregate
+        "wge": None,  # no wage at the root
         "qty": None,  # quantity demanded to be solved for at the aggregate level
     },
 ]
@@ -240,6 +263,15 @@ print(dc_demand_ces)
 # set the output quantity target to 1 for this test. The quantity demanded in
 # each node in the canopy is stored in `dc_demand_ces` after the solver is
 # called.
+# 
+# How are we solving through the nested system?
+#
+# 1. We know at the wages at the outter-most canopy layer and we know all the paraemters of the production system.
+# 2. Given (1), we can construct MC of one more unit of aggregate output each successive higher nest. This is a function of parameters and prices.
+# 3. Then we start from the root, solving for optimal quantity demanded of each successive node/nest, going from the root up to the nest for each subsets of canopy nodes.
+# 4. Now we have the prices, parameter, and quantity target for each of the nest for the canopy nodes, and can solve for the expenditure minimization problem.
+# 
+# This solution structure works for any layer of nesting. 
 
 fl_output_target = 1
 dc_demand_ces = cme_dslv_opti.cme_prod_ces_nested_solver(
@@ -250,14 +282,6 @@ print(dc_demand_ces)
 # %%
 # Step 4, retrieve the equilibrium demand quantity results from demand dictionary
 # -------------------------------------------------------------------------------
-# Note that in in the output below, we have i1 and i2 for workers types 1 and 2 as
-# rows. We also have j1 and j2 which are demand for workers in occupation 1 and 2.
-# We also have an first column j0, which is set to 0 for the labor demand problem.
-# j=0 is leisure, that is only relevant for the labor supply problem, it is the 
-# number of residual workers from the potential worker population who are not working
-# in any of the occupations. This is not determined/relevant for the labor demand
-# problem, so it is set to zero.
-# 
 
 # ar_splv_totl_acrs_i = np.array([4.913439, 3.581734])
 pd_qtlv_all_demand, __ = cme_inpt_parse_wgqt.cme_parse_qtwg_dc2pd_demand(
