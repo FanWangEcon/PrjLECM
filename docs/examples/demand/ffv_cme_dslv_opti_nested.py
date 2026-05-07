@@ -230,9 +230,9 @@ data = [
         "wge": None,  # aggregate input price/wage to be constructed
         "qty": None,  # quantity demanded to be solved for at the aggregate level
     },
-    # Root / aggregate node: produces aggregate output Y from all four canopy inputs
-    # pwr = psi = 0.603628 corresponds to sigma = 1/(1-psi) ~= 2.5
-    # ipt lists the key_node IDs of the four direct inputs; no worker/occ/share/wage at this level
+    # Root / aggregate node: produces aggregate output Y from the two layer 1 inputs
+    # pwr = psi = 0.70 corresponds to sigma = 1/(1-psi) ~= 3.33
+    # ipt lists the key_node IDs of the two inputs; no worker/occ/share/wage at this level
     {
         "key_node": 7,  # root node ID (by convention 0)
         "lyr": 0,  # aggregate layer (root)
@@ -241,7 +241,7 @@ data = [
         "occ": pd.NA,  # not applicable at aggregate level
         "shr": float("nan"),  # no share parameter at the root
         "pwr": 0.70,  # psi = (sigma-1)/sigma; governs elasticity of substitution
-        "ipt": [5, 6],  # key_node IDs of the four canopy inputs to this aggregate
+        "ipt": [5, 6],  # key_node IDs of the two layer 1 inputs to this aggregate
         "wge": None,  # no wage at the root
         "qty": None,  # quantity demanded to be solved for at the aggregate level
     },
