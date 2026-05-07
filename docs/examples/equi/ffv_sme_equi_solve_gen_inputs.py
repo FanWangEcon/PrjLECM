@@ -3,7 +3,7 @@ r"""
 Equilibrium solutions, single-layer CES, multinomial labor supply.
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-https://github.com/FanWangEcon/PrjLECM/issues/5
+Part 1 of https://github.com/FanWangEcon/PrjLECM/issues/5
 
 On this page, we:
 
@@ -12,7 +12,7 @@ On this page, we:
 3. Convert these dataframes to dictionaries: `dc_supply_lgt` and `dc_demand_ces`
 4. Generate the dictionary of demand and supply arrays from (3): `dc_sprl_intr_slpe` and `dc_dmrl_intr_slpe`, as well as the array of total potential workers: `ar_splv_totl_acrs_i`
 5. Solve the first step of the equilibrium solution, which is the single occupation equilibrium: `dc_equi_solve_sone`
-6. Solve the equilibrium labor quantity and prices (wages) solutions, via `prjlecm.equi.cme_equi_solve.cme_equi_solve()`, given quantity output target `fl_output_target=1`
+6. Solve the equilibrium labor quantity and prices (wages) solutions, via :func:`prjlecm.equi.cme_equi_solve.cme_equi_solve()`, given quantity output target `fl_output_target=1`
 
 Suppose we have the following production function
 
@@ -232,17 +232,17 @@ dc_supply_lgt = cme_inpt_convert.cme_convert_pd2dc(
 #    4  0.603628  [1, 2, 3, 4]  None  None  None  None  None  None
 
 # Define the column names that are NOT always None across all rows
-columns = ["key_node", "lyr", "prt", "wkr", "occ", "nvi", "shr", "pwr", "ipt"]
+columns = ["key_node", "lyr", "prt", "wkr", "occ", "shr", "pwr", "ipt"]
 
 # Build the data rows, omitting columns where all values are None
 # For missing values, use pd.NA, None, or float('nan') as appropriate
 
 data = [
-    [1, 1, 5, 0, 0, pd.NA, 0.395547, float("nan"), None],
-    [2, 1, 5, 0, 1, pd.NA, 0.162508, float("nan"), None],
-    [3, 1, 5, 1, 0, pd.NA, 0.128836, float("nan"), None],
-    [4, 1, 5, 1, 1, pd.NA, 0.313109, float("nan"), None],
-    [5, 0, pd.NA, pd.NA, pd.NA, pd.NA, float("nan"), 0.603628, [1, 2, 3, 4]],
+    [1, 1, 5, 0, 0, 0.395547, float("nan"), None],
+    [2, 1, 5, 0, 1, 0.162508, float("nan"), None],
+    [3, 1, 5, 1, 0, 0.128836, float("nan"), None],
+    [4, 1, 5, 1, 1, 0.313109, float("nan"), None],
+    [5, 0, pd.NA, pd.NA, pd.NA, float("nan"), 0.603628, [1, 2, 3, 4]],
 ]
 
 df_demand_params = pd.DataFrame(data, columns=columns)

@@ -213,7 +213,11 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
             fl_prt_pwr = dc_parent['pwr']
             ar_it_ipt = dc_parent['ipt']
             # This line differs from cme_prod_ces_nest():
-            fl_prt_qty = dc_parent['qty']
+            # 2026-05-06 08:51:07, check if qty key exists, if not set to None
+            if 'qty' in dc_parent: 
+                fl_prt_qty = dc_parent['qty']
+            else:
+                fl_prt_qty = None
             fl_prt_drc = dc_parent['drc']
             fl_prt_shc = dc_parent['shc']
 
@@ -224,7 +228,6 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
             for it_chd_key in ar_it_ipt:
                 dc_child = dc_ces_flat[it_chd_key]
                 fl_chd_shr = dc_child['shr']
-                fl_chd_qty = dc_child['qty']
 
                 # Cumulative share can be computied without qty
                 # shc: sh(share)c(cumulative) Cumulative share only
@@ -242,6 +245,7 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
                         print(
                             f'{fl_chd_shr=:.4f} and {fl_chd_shc=:.4f}')
                 else:
+                    fl_chd_qty = dc_child['qty']
                     # Compute: (1/b_1) * (y0)^(1-b_1) * (a_1 * b_1 * (y1)^{b_1 - 1} )
                     # simplified:  (y0)^(1-b_1) * (a_1 * (y1)^{b_1 - 1} )
                     fl_chd_drv, fl_chd_drc, fl_chd_drv_p1 = cme_supt_equa_demand.cme_prod_ces_deri(

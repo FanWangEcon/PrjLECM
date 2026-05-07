@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 r"""
-Solving a 2-layer nested CES optimal demand problem (cost-minimization given output quantity and wages)
+Solving a nested 2-layer CES optimal demand problem (cost-minimization given output quantity and wages)
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Part 2 of https://github.com/FanWangEcon/PrjLECM/issues/7
@@ -15,6 +15,8 @@ Given wages output, quantity target, and all CES parameters, we solve for cost-m
 
 We build on the :doc:`ffv_cme_dslv_opti_nonnested` file, which solves the non-nested-CES demand system problem. 
 
+The results here match with the results in :doc:`../equi/ffv_sme_equi_solve_nested_gen_inputs`, where we solve for equilibrium wages and quantities given demand and supply parameters. We use the equilibrium wages there for the wages here. So the results match up. 
+
 Suppose we have the following production function:
 
 Production function
@@ -28,10 +30,12 @@ Suppose we have the following production function:
    \begin{split}
    Y(x_{1,1}, x_{1,2}, x_{2,1}, x_{2,2}) &= 
    \left(
+      \theta_{1} \cdot
       \left(
           \theta_{1,1} \cdot x_{1,1}^{\psi_1} + 
           \theta_{1,2} \cdot x_{1,2}^{\psi_1}
       \right)^{\frac{\psi}{\psi_1}} + 
+      \theta_{2} \cdot
       \left(
         \theta_{2,1} \cdot x_{2,1}^{\psi_2} + 
         \theta_{2,2} \cdot x_{2,2}^{\psi_2}
@@ -39,10 +43,12 @@ Suppose we have the following production function:
    \right)^{\frac{1}{\psi}}\\
    &=
    \left(
+      0.50 \cdot
       \left(
           0.30 \cdot x_{1,1}^{0.20} + 
           0.70 \cdot x_{1,2}^{0.20}
       \right)^{\frac{0.70}{0.20}} + 
+      0.50 \cdot
       \left(
           0.10 \cdot x_{2,1}^{0.20} + 
           0.90 \cdot x_{2,2}^{0.20}
@@ -152,7 +158,7 @@ data = [
         "shr": 0.30,  # theta_{1,1}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
-        "wge": 0.9185,  # wage w_{1,1}
+        "wge": 1.340259,  # wage w_{1,1}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 0 (wkr=0), occupation 1 (occ=1), i.e. x_{1,2}
@@ -165,7 +171,7 @@ data = [
         "shr": 0.70,  # theta_{1,2}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
-        "wge": 1.1306,  # wage w_{1,2}
+        "wge": 12.671998,  # wage w_{1,2}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 1 (wkr=1), occupation 0 (occ=0), i.e. x_{2,1}
@@ -178,7 +184,7 @@ data = [
         "shr": 0.10,  # theta_{2,1}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
-        "wge": 1.0628,  # wage w_{2,1}
+        "wge": 5.526463,  # wage w_{2,1}
         "qty": None,  # quantity demanded to be solved for
     },
     # Canopy node: worker type 1 (wkr=1), occupation 1 (occ=1), i.e. x_{2,2}
@@ -191,7 +197,7 @@ data = [
         "shr": 0.90,  # theta_{2,2}: share weight in CES aggregate
         "pwr": float("nan"),  # power psi not defined at canopy level
         "ipt": None,  # canopy nodes have no sub-inputs
-        "wge": 1.0519,  # wage w_{2,2}
+        "wge": 7.251012,  # wage w_{2,2}
         "qty": None,  # quantity demanded to be solved for
     },
     # Aggregator over notes 1 and 2

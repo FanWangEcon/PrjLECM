@@ -8,6 +8,8 @@ Part 1 of https://github.com/FanWangEcon/PrjLECM/issues/7
 On this page, we Provide demand side equations for a non-nested CES problem.
 Given wages and output quantity target, we solve for cost-minimizing demand for labor.
 
+The results here match with the results in :doc:`../equi/ffv_sme_equi_solve_gen_inputs`, where we solve for equilibrium wages and quantities given demand and supply parameters. We use the equilibrium wages there for the wages here. So the results match up. 
+
 Suppose we have the following production function
 
 Production function
