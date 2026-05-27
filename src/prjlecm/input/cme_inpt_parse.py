@@ -141,7 +141,12 @@ def cme_parse_demand_lyrpwr(dc_ces_flat, bl_chk_homoinlayer=False):
 def cme_parse_demand_tbidx(dc_ces_flat):
     """Get the Number of Layers in nested flat CES Dictionary
 
-    tbidx: top (lyr0) and bottom (max_layer, largest value) layer index
+    tbidx: root (lyr0) and canopy (max_layer, largest value) layer index
+    
+    Note: throught the code base, we use to call lyr0 the top, and max_layer the bottom. 
+    In 2026, terminology changed. We call layer0 the final aggregator the root. 
+    And we call the layer that has observed wages and quantities the canopy layer. 
+    Think about a tree, branching out from the root to canopy, in various subnests.
 
     Parameters
     ----------

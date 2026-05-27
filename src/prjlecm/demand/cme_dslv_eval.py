@@ -9,22 +9,34 @@ import prjlecm.demand.cme_dslv_opti as cme_dslv_opti
 
 
 def cme_prod_ces_nest_agg_q_p(dc_ces_flat, st_solve_type='qty', verbose=False, verbose_debug=False):
-    """Evaluates nested-CES production function 
-
+    """Computes aggregate input price and aggregate outputs from canopy to root
+    
+    Part 3 of https://github.com/FanWangEcon/PrjLECM/issues/7
+    
     Nested-ces aggregate production (q) and aggregate price (p) function.
     Aggregation each subnest layer one by one.
 
-    Given quantities solved or simulated stored at bottom-most layer
-    in `dc_ces_flat` flat nested-ces storage nested-dictionary, generate
-    all upper level quantities, with share and quantity parameters for 
-    each sub-tree given information among children along each sub-branch. 
-    Do this iteratively up until reach to top of the nesting tree. 
+    If `st_solve_type` is `qty`, given quantities solved or simulated stored at
+    canopy layer in `dc_ces_flat` flat nested-ces storage nested-dictionary,
+    along with the `shr` and `pwr` parameters, generate quantities towards the root .
+     Do this iteratively from the canopy layer until reach to root of the nesting tree.
+    
+    If `st_solve_type` is `wge`, given wages solved or simulated stored at
+    canopy layer in `dc_ces_flat` flat nested-ces storage nested-dictionary,
+    along with the `shr` and `pwr` parameters, generate all aggregate
+    wages at all nest, from canopy layer down to the root of the nesting tree.
+    
+    The overall nested CES problem can be decomposed into separate CES problems. The
+    canopy layer needs to have the output requirement for its most immediate nest. 
+    This quantity is found by generating an aggregate price for this nest, and solving
+    the demand problem for the lower nest given this aggregate price. The optimal 
+    demand from the lower nest then becomes the output requirement for the higher/canopy layer.  
 
     Note that this will mute `dc_ces_flat` the input, not doing deepcopy.
 
     # Output for nested-CES problems
     # 1. Simulate nested-ces with quantities
-    # 2. Find the index for the "highest"/bottom-most layer
+    # 2. Find the index for the canopy layer
     # 3. Find all the unique parents within the layer
     # 4. Conditional on layer and key, get Q array, and share Array
     # 5. Get from parent's dictionary power
@@ -41,17 +53,17 @@ def cme_prod_ces_nest_agg_q_p(dc_ces_flat, st_solve_type='qty', verbose=False, v
         Print solution details, by default True
     """
     # 1. Get all layers
-    it_max_layer, __, __ = cme_inpt_parse.cme_parse_demand_tbidx(
+    it_canopy_layer, __, __ = cme_inpt_parse.cme_parse_demand_tbidx(
         dc_ces_flat)
     if verbose_debug:
-        print(f'{it_max_layer=}')
+        print(f'{it_canopy_layer=}')
 
     # 2. Loop over layers
-    for it_layer_minus1 in reversed(np.arange(it_max_layer)):
+    for it_layer_minus1 in reversed(np.arange(it_canopy_layer)):
         if verbose_debug:
             print(f'{it_layer_minus1+1=}')
 
-        # 3. Find all the unique parents within the layer
+        # 3. Find all the unique parents keys of nodes within the current layer
         # does not need to be sorted
         ls_prt_layer = [dc_ces_flat[chd_key]['prt']
                         for chd_key in dc_ces_flat
@@ -118,8 +130,8 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
     DRC = derivative cumulative, which is MPK
     SHC = share cumulative, which is share parameter if elas of sub all layer is homogeneous
 
-    Without quantities at highest layer (bottom layer), only generates shc, 
-    which is needed for equi. solution first iteration to generate highest
+    Without quantities at canopy layer (bottom layer), only generates shc, 
+    which is needed for equi. Solution first iteration to generate highest
     layer optimal quantities. 
 
     With quantities at highest layer, randomly simulated for testing, or results
@@ -160,15 +172,19 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
       Note that for the equation above, we are computing at the nodes corresponding to
       the denominator of the derivative, also note that, we need: (1) current node q;
       (2) parent node q; (3) current node share; (4) parent node power.
+      
     Now we proceed to do the following:
+    
     Overall, we construct:
+    
       - drc: which is MPL for the current input at the current layer
       - drv: which is the contribution of the node at the current layer to the cumulative MPL
       - shr: this is already there, this is the share parameter for the current node at current layer
       - shc: this is the cumulative prod share parameters, from this point up a_1 * a_2 * ..., multiplied
       - sni: s=share n=nest i=intercept, this is the nested-ces intercept share parameter
              sni = drc/(y3)^{b3-1}, because (y3)^{b3-1} is slope component not intercept.
-    1. At each non-0 layer, get the parent index
+             
+    1. At each non-root layer, get the parent index
     2. Get the q and power parameter from the parent, also parent drc is lyr != 0
     3. For the current node, get its q and share
     4. Construct the derivative component, as drv, following:
@@ -183,18 +199,18 @@ def cme_prod_ces_nest_mpl(dc_ces_flat, verbose=False, verbose_debug=False):
     """
 
     # 0. Get all layers
-    it_max_layer, __, it_lyr0_key = cme_inpt_parse.cme_parse_demand_tbidx(
+    it_canopy_layer, __, it_root_layer_key = cme_inpt_parse.cme_parse_demand_tbidx(
         dc_ces_flat)
     if verbose_debug:
-        print(f'{it_lyr0_key=} and {it_max_layer=}')
+        print(f'{it_root_layer_key=} and {it_canopy_layer=}')
 
-    # 1. lyr=0, drc set to 1
-    dc_ces_flat[it_lyr0_key]['drc'] = 1
-    dc_ces_flat[it_lyr0_key]['shc'] = 1
-    dc_ces_flat[it_lyr0_key]['sni'] = 1
+    # 1. lyr=0 (root), drc set to 1
+    dc_ces_flat[it_root_layer_key]['drc'] = 1
+    dc_ces_flat[it_root_layer_key]['shc'] = 1
+    dc_ces_flat[it_root_layer_key]['sni'] = 1
 
-    # 2. Loop over layers, excluding 0th
-    for it_layer in np.arange(it_max_layer) + 1:
+    # 2. Loop over layers, excluding the root
+    for it_layer in np.arange(it_canopy_layer) + 1:
         if verbose_debug:
             print(f'{it_layer=}')
 
